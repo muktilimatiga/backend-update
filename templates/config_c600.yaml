@@ -1,0 +1,26 @@
+# Template for ZTE C600 Series
+- "configure terminal"
+- "interface {{ interface_olt }}"
+- "onu {{ onu_id }} type {{ jenismodem }} sn {{ sn }}"
+- "exit"
+- "interface {{ interface_onu }}"
+- "name {{ customer.name }}"
+- "description {{ customer.address }}"
+- "tcont 1 name CIGNAL profile UP-100MB"
+- "gemport 1 name CIGNAL tcont 1"
+- "exit"
+- "interface vport-1/{{ pon_port }}/{{ pon_slot }}.{{ onu_id }}:1"
+- "service-port 1 user-vlan {{ vlan }} vlan {{ vlan }}"
+- "qos traffic-policy DOWN-100M direction egress"
+- "exit"
+- "pon-onu-mng {{ interface_onu }}"
+- "service CIGNAL gemport 1 vlan {{ vlan }}"
+- "tr069-mgmt 1 state unlock acs http://172.16.129.3:7547 validate basic username acs password acsadmin12345"
+- "wan-ip ipv4 mode pppoe username {{ customer.pppoe_user }} password {{ customer.pppoe_pass }} vlan-profile vlan{{ vlan }} host 1"
+- "security-mgmt 2 state enable mode forward protocol web"
+# Loop for Ethernet port states
+{% for i in range(4) %}
+- "interface eth eth_0/{{ i + 1 }} state {{ 'lock' if eth_locks[i] else 'unlock' }}"
+{% endfor %}
+- "exit"
+- "exit"

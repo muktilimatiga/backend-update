@@ -1,0 +1,36 @@
+ERROR:__main__:Failed to connect to Supabase: connection failed: connection to server at "3.1.167.181", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+Multiple connection attempts failed. All failures were:
+- host: 'aws-1-ap-southeast-1.pooler.supabase.com', port: 6543, hostaddr: '13.213.241.248': connection failed: connection to server at "13.213.241.248", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+- host: 'aws-1-ap-southeast-1.pooler.supabase.com', port: 6543, hostaddr: '3.1.167.181': connection failed: connection to server at "3.1.167.181", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+ERROR:__main__:Failed to fetch customers_view: connection failed: connection to server at "3.1.167.181", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+Multiple connection attempts failed. All failures were:
+- host: 'aws-1-ap-southeast-1.pooler.supabase.com', port: 6543, hostaddr: '13.213.241.248': connection failed: connection to server at "13.213.241.248", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+- host: 'aws-1-ap-southeast-1.pooler.supabase.com', port: 6543, hostaddr: '3.1.167.181': connection failed: connection to server at "3.1.167.181", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+Testing Supabase connection...
+--------------------------------------------------
+Traceback (most recent call last):
+  File "E:\CODE\backend\services\supabase.py", line 106, in <module>
+    customers = get_customers_view(limit=5)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\CODE\backend\services\supabase.py", line 35, in get_customers_view
+    with get_connection() as conn:
+         ^^^^^^^^^^^^^^^^
+  File "E:\CODE\backend\services\supabase.py", line 17, in get_connection
+    conn = psycopg.connect(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\Neiger\AppData\Local\Programs\Python\Python311\Lib\site-packages\psycopg\connection.py", line 129, in connect
+    raise type(last_ex)("\n".join(lines)).with_traceback(None)
+psycopg.OperationalError: connection failed: connection to server at "3.1.167.181", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+Multiple connection attempts failed. All failures were:
+- host: 'aws-1-ap-southeast-1.pooler.supabase.com', port: 6543, hostaddr: '13.213.241.248': connection failed: connection to server at "13.213.241.248", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+- host: 'aws-1-ap-southeast-1.pooler.supabase.com', port: 6543, hostaddr: '3.1.167.181': connection failed: connection to server at "3.1.167.181", port 6543 failed: FATAL:  Circuit breaker open: Unable to establish connection to upstream database
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\CODE\backend\services\supabase.py", line 119, in <module>
+    print(f"\u274c Error: {e}")
+  File "C:\Users\Neiger\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>

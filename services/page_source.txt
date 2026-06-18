@@ -1,0 +1,1613 @@
+
+<!-- From here all HTML coding can be done -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <style>
+    #online_log {
+        height: 340px;
+        overflow-y: scroll;
+    }
+	
+	#radpostauth_log {
+        height: 310px;
+        overflow-y: scroll;
+    }
+    </style>
+    <meta charset="utf-8" />
+    <title>Dashboard | Billing - Lexxa Data Indonusa</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
+    <meta content="Coderthemes" name="author" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="../../assets/images/favicon.ico">
+
+    <!-- Plugins css -->
+    <link href="../../assets/libs/flatpickr/flatpickr.min.css" rel="stylesheet" type="text/css" />
+    <link href="../../assets/libs/selectize/css/selectize.bootstrap3.css" rel="stylesheet" type="text/css" />
+
+    <!-- third party css -->
+    <link href="../../assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css" rel="stylesheet"
+        type="text/css" />
+    <link href="../../assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css" rel="stylesheet"
+        type="text/css" />
+    <!-- third party css end -->
+ <!-- Jquery Toast css -->
+        <link href="../../assets/libs/jquery-toast-plugin/jquery.toast.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- App css -->
+    <link href="../../assets/css/bootstrap-modern.min.css" rel="stylesheet" type="text/css"
+        id="bs-default-stylesheet" />
+    <link href="../../assets/css/app-modern.min.css" rel="stylesheet" type="text/css" id="app-default-stylesheet" />
+
+    <link href="../../assets/css/bootstrap-modern-dark.min.css" rel="stylesheet" type="text/css"
+        id="bs-dark-stylesheet" />
+    <link href="../../assets/css/app-modern-dark.min.css" rel="stylesheet" type="text/css" id="app-dark-stylesheet" />
+
+    <!-- icons -->
+    <link href="../../assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- Bootstrap Tables css -->
+    <link href="../../assets/libs/bootstrap-table/bootstrap-table.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- icons -->
+    <link href="../../assets/css/toaser.css" rel="stylesheet" type="text/css" />
+	
+	
+		
+	<script src="../../assets/anychart/anychart-core.min.js"></script>
+    <script src="../../assets/anychart/anychart-graph.min.js"></script>
+    <script src="../../assets/anychart/anychart-data-adapter.min.js"></script>
+
+
+</head>
+
+<body class="loading" data-layout-mode="horizontal"
+    data-layout='{"mode": "light", "width": "fluid", "menuPosition": "fixed", "topbar": {"color": "dark"}, "showRightSidebarOnPageLoad": false}'>
+
+
+
+
+
+    <!-- Begin page -->
+    <div id="wrapper">
+
+        <!-- Topbar Start -->
+        <div class="navbar-custom">
+            <div class="container-fluid">
+                <ul class="list-unstyled topnav-menu float-right mb-0">
+
+                    <li class="d-none d-lg-block">
+                        <form class="app-search">
+                            <div class="app-search-box dropdown">
+
+                                <div class="dropdown-menu dropdown-lg" id="search-dropdown">
+                                    <!-- item-->
+                                    <div class="dropdown-header noti-title">
+                                        <h5 class="text-overflow mb-2">Found 22 results</h5>
+                                    </div>
+
+                                    <!-- item-->
+                                    <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                        <i class="fe-home mr-1"></i>
+                                        <span>Analytics Report</span>
+                                    </a>
+
+                                    <!-- item-->
+                                    <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                        <i class="fe-aperture mr-1"></i>
+                                        <span>How can I help you?</span>
+                                    </a>
+
+                                    <!-- item-->
+                                    <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                        <i class="fe-settings mr-1"></i>
+                                        <span>User profile settings</span>
+                                    </a>
+
+                                    <!-- item-->
+                                    <div class="dropdown-header noti-title">
+                                        <h6 class="text-overflow mb-2 text-uppercase">Users</h6>
+                                    </div>
+
+                                    <div class="notification-list">
+                                        <!-- item-->
+                                        <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                            <div class="media">
+                                                <img class="d-flex mr-2 rounded-circle"
+                                                    src="../../assets/images/users/user-2.jpg"
+                                                    alt="Generic placeholder image" height="32">
+                                                <div class="media-body">
+                                                    <h5 class="m-0 font-14">Erwin E. Brown</h5>
+                                                    <span class="font-12 mb-0">UI Designer</span>
+                                                </div>
+                                            </div>
+                                        </a>
+
+                                        <!-- item-->
+                                        <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                            <div class="media">
+                                                <img class="d-flex mr-2 rounded-circle"
+                                                    src="../../assets/images/users/user-5.jpg"
+                                                    alt="Generic placeholder image" height="32">
+                                                <div class="media-body">
+                                                    <h5 class="m-0 font-14">Jacob Deo</h5>
+                                                    <span class="font-12 mb-0">Developer</span>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </form>
+                    </li>
+
+                    <li class="dropdown d-inline-block d-lg-none">
+                        <a class="nav-link dropdown-toggle arrow-none waves-effect waves-light" data-toggle="dropdown"
+                            href="#" role="button" aria-haspopup="false" aria-expanded="false">
+                            <i class="fe-search noti-icon"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-lg dropdown-menu-right p-0">
+                            <form class="p-3">
+                                <input type="text" class="form-control" placeholder="Search ..."
+                                    aria-label="Recipient's username">
+                            </form>
+                        </div>
+                    </li>
+
+                    <li class="dropdown d-none d-lg-inline-block">
+                        <a class="nav-link dropdown-toggle arrow-none waves-effect waves-light" data-toggle="fullscreen"
+                            href="#">
+                            <i class="fe-maximize noti-icon"></i>
+                        </a>
+                    </li>
+
+
+                    <li class="dropdown notification-list topbar-dropdown">
+                        <a class="nav-link dropdown-toggle waves-effect waves-light" data-toggle="dropdown" href="#"
+                            role="button" aria-haspopup="false" aria-expanded="false">
+                            <i class="fe-bell noti-icon"></i>
+                            <span class="badge badge-danger rounded-circle noti-icon-badge">9</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right dropdown-lg">
+
+                            <!-- item-->
+                            <div class="dropdown-item noti-title">
+                                <h5 class="m-0">
+                                    <span class="float-right">
+                                        <a href="" class="text-dark">
+                                            <small>Clear All</small>
+                                        </a>
+                                    </span>Notification
+                                </h5>
+                            </div>
+
+                            <div class="noti-scroll" data-simplebar>
+
+                                <!-- item-->
+                                <a href="javascript:void(0);" class="dropdown-item notify-item active">
+                                    <div class="notify-icon">
+                                        <img src="../../assets/images/users/user-1.jpg" class="img-fluid rounded-circle"
+                                            alt="" />
+                                    </div>
+                                    <p class="notify-details">Cristina Pride</p>
+                                    <p class="text-muted mb-0 user-msg">
+                                        <small>Hi, How are you? What about our next meeting</small>
+                                    </p>
+                                </a>
+
+                                <!-- item-->
+                                <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                    <div class="notify-icon bg-primary">
+                                        <i class="mdi mdi-comment-account-outline"></i>
+                                    </div>
+                                    <p class="notify-details">Caleb Flakelar commented on Admin
+                                        <small class="text-muted">1 min ago</small>
+                                    </p>
+                                </a>
+
+                                <!-- item-->
+                                <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                    <div class="notify-icon">
+                                        <img src="../../assets/images/users/user-4.jpg" class="img-fluid rounded-circle"
+                                            alt="" />
+                                    </div>
+                                    <p class="notify-details">Karen Robinson</p>
+                                    <p class="text-muted mb-0 user-msg">
+                                        <small>Wow ! this admin looks good and awesome design</small>
+                                    </p>
+                                </a>
+
+                                <!-- item-->
+                                <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                    <div class="notify-icon bg-warning">
+                                        <i class="mdi mdi-account-plus"></i>
+                                    </div>
+                                    <p class="notify-details">New user registered.
+                                        <small class="text-muted">5 hours ago</small>
+                                    </p>
+                                </a>
+
+                                <!-- item-->
+                                <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                    <div class="notify-icon bg-info">
+                                        <i class="mdi mdi-comment-account-outline"></i>
+                                    </div>
+                                    <p class="notify-details">Caleb Flakelar commented on Admin
+                                        <small class="text-muted">4 days ago</small>
+                                    </p>
+                                </a>
+
+                                <!-- item-->
+                                <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                    <div class="notify-icon bg-secondary">
+                                        <i class="mdi mdi-heart"></i>
+                                    </div>
+                                    <p class="notify-details">Carlos Crouch liked
+                                        <b>Admin</b>
+                                        <small class="text-muted">13 days ago</small>
+                                    </p>
+                                </a>
+                            </div>
+
+                            <!-- All-->
+                            <a href="javascript:void(0);"
+                                class="dropdown-item text-center text-primary notify-item notify-all">
+                                View all
+                                <i class="fe-arrow-right"></i>
+                            </a>
+
+                        </div>
+                    </li>
+
+                    <li class="dropdown notification-list topbar-dropdown">
+                        <a class="nav-link dropdown-toggle nav-user mr-0 waves-effect waves-light"
+                            data-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+                            <img src="../../assets/images/users/user-6.jpg" alt="user-image" class="rounded-circle">
+                            <span class="pro-user-name ml-1">
+                                WICAK <i class="mdi mdi-chevron-down"></i>
+                            </span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right profile-dropdown ">
+                            <!-- item-->
+                            <div class="dropdown-header noti-title">
+                                <h6 class="text-overflow m-0">Welcome !</h6>
+                            </div>
+
+                            <!-- item-->
+                            <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                <i class="fe-user"></i>
+                                <span>My Account</span>
+                            </a>
+
+                            <!-- item-->
+                            <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                <i class="fe-settings"></i>
+                                <span>Settings</span>
+                            </a>
+
+                            <!-- item-->
+                            <a href="javascript:void(0);" class="dropdown-item notify-item">
+                                <i class="fe-lock"></i>
+                                <span>Lock Screen</span>
+                            </a>
+
+                            <div class="dropdown-divider"></div>
+
+                            <!-- item-->
+                            <a href="../../log_out.php" class="dropdown-item notify-item">
+                                <i class="fe-log-out"></i>
+                                <span>Logout</span>
+                            </a>
+
+                        </div>
+                    </li>
+
+                     
+					 
+
+                </ul>
+
+                <!-- LOGO -->
+                <div class="logo-box">
+                    <a href="index.php" class="logo logo-dark text-center">
+                        <span class="logo-sm">
+                            <!-- <img src="../assets/images/logo-sm.png" alt="" height="22">-->
+                            <span class="logo-lg-text-light">0</span>
+                        </span>
+                        <span class="logo-lg">
+                            <!-- <img src="../assets/images/logo-dark.png" alt="" height="20">-->
+                            <span class="logo-lg-text-light">0</span>
+                        </span>
+                    </a>
+
+                    <a href="index.php" class="logo logo-light text-center">
+                        <span class="logo-sm">
+
+                            <span class="logo-lg-text-light">
+							LN</span>
+                        </span>
+                        <span class="logo-lg">
+
+                            <span class="logo-lg-text-light">Lexxa Net</span>
+                        </span>
+                    </a>
+                </div>
+
+                <ul class="list-unstyled topnav-menu topnav-menu-left m-0">
+                    <li>
+                        <button class="button-menu-mobile waves-effect waves-light">
+                            <i class="fe-menu"></i>
+                        </button>
+                    </li>
+
+                    <li>
+                        <!-- Mobile menu toggle (Horizontal Layout)-->
+                        <a class="navbar-toggle nav-link" data-toggle="collapse" data-target="#topnav-menu-content">
+                            <div class="lines">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </a>
+                        <!-- End mobile menu toggle-->
+                    </li>
+
+
+
+
+                </ul>
+                <div class="clearfix"></div>
+            </div>
+        </div>
+        <!-- end Topbar -->
+
+
+        <div class="topnav shadow-lg">
+            <div class="container-fluid">
+                <nav class="navbar navbar-light navbar-expand-lg topnav-menu">
+
+                    <div class="collapse navbar-collapse" id="topnav-menu-content">
+                        <ul class="navbar-nav">
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle arrow-none" href="index.php?tep=hm" role="button">
+                                    <i class="fe-airplay mr-1"></i> Home <div></div>
+                                </a>
+
+                            </li>
+
+							 <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle arrow-none" href="index.php?tep=ttap" role="button">
+                                    <i class="fe-map mr-1"></i> Topologi <div></div>
+                                </a>
+
+                            </li>
+							
+
+							<li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-apps" role="button"
+                                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fe-user mr-1"></i> Service <div class="arrow-down"></div>
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="topnav-apps">
+
+                                        
+                                    
+									
+
+                                        <div class="dropdown">
+                                            <a class="dropdown-item dropdown-toggle arrow-none" href="#" id="topnav-crm"
+                                                role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fe-users mr-1"></i> Data Master <div class="arrow-down"></div>
+                                            </a>
+                                            <div class="dropdown-menu" aria-labelledby="topnav-crm">
+												<a href="index.php?tep=sdpo" class="dropdown-item">Data Pop</a>
+												<a href="index.php?tep=dpbr" class="dropdown-item">Paket Broadband</a>
+												
+                                            </div>
+											
+											
+											
+											
+                                        </div>
+										
+										
+										<div class="dropdown">
+                                            <a class="dropdown-item dropdown-toggle arrow-none" href="#" id="topnav-crm"
+                                                role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fe-users mr-1"></i> Data User <div class="arrow-down"></div>
+                                            </a>
+                                            <div class="dropdown-menu" aria-labelledby="topnav-crm">
+                                                <a href="index.php?tep=sdly" class="dropdown-item">Daftar Layanan</a>
+                                                
+                                            </div>
+                                        </div>
+
+					
+                                        
+                                    </div>
+                                </li>
+							
+							
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-apps" role="button"
+                                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fe-user mr-1"></i> Users <div class="arrow-down"></div>
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="topnav-apps">
+
+                                        
+                                    
+									
+
+                                        <div class="dropdown">
+                                            <a class="dropdown-item dropdown-toggle arrow-none" href="#" id="topnav-crm"
+                                                role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fe-users mr-1"></i> Broadband <div class="arrow-down"></div>
+                                            </a>
+                                            <div class="dropdown-menu" aria-labelledby="topnav-crm">
+												
+												  <!-- 
+												<a href="index.php?tep=onp" class="dropdown-item">Online</a>
+												<a href="index.php?tep=ofp" class="dropdown-item">Offline</a>
+												 -->
+												<a href="index.php?tep=seus" class="dropdown-item">Search</a>
+												
+												
+												
+												<a href="index.php?tep=rep" class="dropdown-item">Reject</a>
+												<a href="index.php?tep=rdcn" class="dropdown-item">Record DC</a>
+                                            </div>
+                                        </div>
+										
+										
+										<div class="dropdown">
+                                            <a class="dropdown-item dropdown-toggle arrow-none" href="#" id="topnav-crm"
+                                                role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fe-users mr-1"></i> Dedicated <div class="arrow-down"></div>
+                                            </a>
+                                            <div class="dropdown-menu" aria-labelledby="topnav-crm">
+                                                <a href="index.php?tep=obnp" class="dropdown-item">Online User</a>
+												<a href="index.php?tep=obfp" class="dropdown-item">Offline User</a>
+                                                
+                                            </div>
+                                        </div>
+
+                                        
+                                    </div>
+                                </li>
+
+                                
+							<li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-dashboard1"
+                                    role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fe-file mr-1"></i> OLT <div class="arrow-down"></div>
+                                </a>
+                                <div class="dropdown-menu" aria-labelledby="topnav-dashboard1">
+								
+								<a href="index.php?tep=olmdol" class="dropdown-item">Data OLT</a> 
+								<a href="index.php?tep=olmiss" class="dropdown-item">ONT Isues</a>  
+								
+								<div class="dropdown">
+                                            <a class="dropdown-item dropdown-toggle arrow-none" href="#" id="topnav-crm"
+                                                role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                              Data ONT <div class="arrow-down"></div>
+                                            </a>
+											
+                                            <div class="dropdown-menu" aria-labelledby="topnav-crm">
+												<a href="index.php?tep=olmdon&s=working" class="dropdown-item">working</a> 
+												<a href="index.php?tep=olmdon&s=los" class="dropdown-item">los</a>
+												<a href="index.php?tep=olmdon&s=dyinggasp" class="dropdown-item">dyinggasp</a>
+                                                <a href="index.php?tep=olmdon&s=offline" class="dropdown-item">offline</a>
+												
+                                                
+                                            </div>
+                                   </div>
+								
+								                               
+                                </div>
+								
+								
+                           
+
+
+						   </li>
+							
+
+                           
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-dashboard"
+                                    role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fe-file mr-1"></i> Ticket <div class="arrow-down"></div>
+                                </a>
+                                <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
+								 <a href="index.php?tep=tigm" class="dropdown-item">Metro E</a>
+								 <a href="index.php?tep=tps" class="dropdown-item">PSB</a>
+                                 <a href="index.php?tep=tin" class="dropdown-item">Non Physical</a>
+								
+                                 <a href="index.php?tep=tig" class="dropdown-item">Physical</a>
+								<a href="index.php?tep=tmn" class="dropdown-item">Migration</a>
+								<a href="index.php?tep=tbn" class="dropdown-item">BOD</a>
+
+
+                                </div>
+                            </li>
+
+
+                        </ul> <!-- end navbar-->
+                    </div> <!-- end .collapsed-->
+                </nav>
+            </div> <!-- end container-fluid -->
+        </div> <!-- end topnav-->
+
+
+
+
+
+
+        <!-- ============================================================== -->
+        <!-- Start Page Content here -->
+        <!-- ============================================================== -->
+
+        <div class="content-page">
+            <div class="content">
+
+                <!-- Start Content-->
+
+                <!-- Start Content-->
+<div class="container-fluid">
+
+    <!-- start page title -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="javascript: void(0);">Billing</a></li>
+                        <li class="breadcrumb-item"><a href="javascript: void(0);">Active Session</a></li>
+                        <li class="breadcrumb-item active">Search PPPoE</li>
+                    </ol>
+                </div>
+                <h4 class="page-title">Search PPPoE</h4>
+            </div>
+        </div>
+    </div>
+    <!-- end page title -->
+
+ <div class="row">
+                <div class="col-12">
+                    <div class="card-box">
+    <div class="form-group mb-3">
+        <form method="post">
+            <div class="input-group">
+
+                <input type="text" class="form-control" name="type_cari" placeholder="Type Customer Name Or No Internet Or SN Modem" aria-label="Recipient's username">
+                <div class="input-group-append">
+                    <button class="btn btn-info waves-effect waves-light" name="cari_tagihan" type="submit"><i class="fe-search"> </i> Search</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+
+
+
+    
+
+           
+
+
+
+                        <table class="table table-hover m-0 table-centered dt-responsive nowrap w-100" id="tickets-table">
+                            <thead>
+                                <tr>
+									<th>Id</th>
+                                    <th>Name</th>
+									<th>Onu Status</th>
+                                    <th>PPPoE Status</th>
+                                    <th>Uptime</th>
+
+                                    <th>Last Contact</th>
+
+                                    <th class="hidden-sm">Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                                                
+
+
+                                    <tr>
+
+										 <td>
+                                            9639                                        </td>
+
+                                        <td>
+                                            <h6 class="mb-0 font-weight-normal">SITI SUFIYAH (KTN)</h6>
+                                            <p class="mb-0 text-muted"><small>DS. BEJI KEC. BOYOLANGU KAB. TULUNGAGUNG</small></p>
+                                        </td>
+
+
+										 <td>
+                                          												 <span class="badge badge-danger">Offline</span>
+												
+												                                          </td>
+
+                                        <td>
+
+                                                                                            <span class="badge badge-danger">OFFLINE</span>
+                                                                                    </td>
+
+
+                                        <td>
+
+                                                                                            <span class="badge badge-warning"> 0d 2:0:1</span>
+                                            
+
+                                        </td>
+
+
+
+                                        <td>
+                                            22 Apr 12:04                                        </td>
+
+
+
+                                        <td>
+                                            <div class="btn-group dropdown">
+                                                <a href="javascript: void(0);" class="table-action-btn dropdown-toggle arrow-none btn btn-light btn-sm" data-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></a>
+                                                <div class="dropdown-menu dropdown-menu-right">
+                                                    <a class="dropdown-item" href="index.php?tep=dp&id=9639-e37114422"><i class="mdi mdi-pencil mr-2 text-muted font-18 vertical-middle"></i>Detail</a>
+                                                    
+													
+
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                
+                            </tbody>
+                        </table>
+                    </div>
+                </div><!-- end col -->
+            </div>
+
+
+            <!-- end row -->
+
+    
+
+</div> <!-- container -->
+
+
+
+
+
+
+
+
+            </div> <!-- content -->
+
+            <!-- Footer Start -->
+            <footer class="footer">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-6">
+                            2017 - <script>
+                            document.write(new Date().getFullYear())
+                            </script> &copy; UBold theme by <a href="">Coderthemes</a>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-md-right footer-links d-none d-sm-block">
+                                <a href="javascript:void(0);">About Us</a>
+                                <a href="javascript:void(0);">Help</a>
+                                <a href="javascript:void(0);">Contact Us</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+            <!-- end Footer -->
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- End Page content -->
+        <!-- ============================================================== -->
+
+
+    </div>
+    <!-- END wrapper -->  
+    <!-- Right bar overlay-->
+    <div class="rightbar-overlay"></div>
+    <!-- Vendor js -->
+    <script src="../../assets/js/vendor.min.js"></script>
+    <!-- Plugins js-->
+    <script src="../../assets/libs/flatpickr/flatpickr.min.js"></script>
+    <script src="../../assets/libs/apexcharts/apexcharts.min.js"></script>
+    
+	
+    <script src="../../assets/libs/selectize/js/standalone/selectize.min.js"></script>
+    <!-- Dashboar 1 init js-->
+    <!-- Datatables init --> 
+    <script src="../../assets/js/pages/bootstrap-tables.init.js"></script>
+    <script src="../../assets/libs/bootstrap-table/bootstrap-table.min.js"></script>
+    <!-- Chart JS -->
+    <script src="../../assets/libs/chart.js/Chart.bundle.min.js"></script>
+    <!-- <script src="../assets/js/pages/dashboard-1.init.js"></script>-->
+    <!-- third party js -->
+    <script src="../../assets/libs/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="../../assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="../../assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js"></script>
+    <script src="../../assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js"></script>
+    <script src="../../assets/libs/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+    <!-- third party js ends -->
+    <!-- third party js -->
+    <script src="../../assets/libs/jquery-datatables-checkboxes/js/dataTables.checkboxes.min.js"></script>
+    <!-- third party js ends -->
+    <!-- Tickets js -->
+    <!-- App js-->
+    <script src="../../assets/js/app.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js" integrity="sha512-Y5MDU6RaF5h5HE5BgqJlKkV12kbkbIgWHutcT+XHHNOUzr+HHjWZGC02sqEguuPglmFms3cc08WH2PhQ5rF8Cw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+	<!-- Tost-->
+    <script src="../../assets/libs/jquery-toast-plugin/jquery.toast.min.js"></script>
+	
+	 
+
+  <!-- Chart JS -->
+        <script src="../../assets/libs/chart.js/Chart.bundle.min.js"></script>
+		
+		
+
+
+
+<script>
+const ctx4 = document.getElementById('dataminute').getContext('2d');
+const myChart9 = new Chart(ctx4, {
+    type: 'bar',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'OFFLINE USER',
+            data: [],
+            //backgroundColor:  'red',
+            //borderColor:  'red',
+			 backgroundColor: 'rgba(255, 99, 132, 0.2)',
+			borderColor:   'rgb(255, 99, 132)',
+			fill: false,
+			
+			pointRadius: 0,
+            borderWidth: 1
+        }
+		]
+    },
+    options: {
+	animation:{duration:0},
+	 legend:{display:true},
+       scales: {
+		   
+     yAxes:[{
+		ticks:{
+		
+		beginAtZero:false,
+
+		stepSize: 1
+		
+		},
+		  position: 'right',
+		}]
+    }
+    }
+});
+
+
+
+const ctx2 = document.getElementById('hourly').getContext('2d');
+const myChart11 = new Chart(ctx2, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'HOUR',
+            data: [],
+            backgroundColor:  'red',
+            borderColor:  'red',
+			fill: false,
+			
+			pointRadius: 0,
+            borderWidth: 2
+        }]
+    },
+    options: {
+	animation:{duration:0},
+	 legend:{display:false},
+       scales: {
+		   
+     yAxes:[{
+		ticks:{
+		
+		beginAtZero:false,
+
+		stepSize: 1
+		
+		},
+		  position: 'right',
+		}]
+    }
+    }
+});
+
+const ctx42 = document.getElementById('daily').getContext('2d');
+const myChart12 = new Chart(ctx42, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'MINUTE',
+            data: [],
+            backgroundColor:  'red',
+            borderColor:  'red',
+			fill: false,
+			
+			
+			pointRadius: 0,
+            borderWidth: 2
+        }]
+    },
+    options: {
+	animation:{duration:0},
+	 legend:{display:false},
+       scales: {
+		   
+     yAxes:[{
+		ticks:{
+		
+		beginAtZero:false,
+
+		stepSize: 1
+		
+		},
+		  position: 'right',
+		}]
+    }
+    }
+});
+
+
+
+
+
+
+</script>
+
+
+
+
+    <script>
+    $(document).ready(function() {
+        var connectionOptions = {
+            "force new connection": true,
+            "reconnectionAttempts": "Infinity",
+            "timeout": 1000,
+            "transports": ["websocket"]
+        }
+
+        var socket = io.connect('https://nms.lexxadata.net.id:3000/', connectionOptions)
+
+
+socket.emit('send_nama_server',{
+			
+			
+			nama_server: "Lexxa Net",
+			id_user: 149,
+            nama_user: "WICAK",
+            lisensi_user: "Noc Pop"			
+			
+		});
+
+
+socket.on('liveDataMinute'+"Lexxa Net", function(msg1) {
+			console.log('liveDataMinute',msg1);
+				 
+			let liveDataMinute = {
+					start_realtime: [],
+					online_realtime: [],	
+					offline_realtime: [],
+					time_realtime: []
+				  };
+			liveDataMinute=msg1.liveDataMinute;	  
+				  
+				myChart9.data.labels = liveDataMinute.time_realtime;
+				myChart9.data.datasets[0].data = liveDataMinute.offline_realtime;
+				 //myChart9.data.datasets[1].data =  liveDataMinute.offline_realtime;
+				 myChart9.update();
+				
+				
+			});
+
+
+socket.on('daily_chart'+"Lexxa Net", function(msg1) {
+			
+				 
+			let liveDataUserHour = {
+					start_minute: [],
+					online_minute: [],	
+					offline_minute: [],
+					time_minute: []
+				  };
+			liveDataUserHour=msg1.liveDataUserHour;	  
+				  
+				 myChart12.data.labels = liveDataUserHour.time_minute;
+				  myChart12.data.datasets[0].data = liveDataUserHour.offline_minute;
+				  //myChart12.data.datasets[1].data =  liveDataUserHour.online_minute;
+				  myChart12.update();
+				
+				
+			});
+			
+			
+			
+			
+			socket.on('liveDataHour'+"Lexxa Net", function(msg) {
+				let liveDataUserRealtime = {
+					start_real: [],
+					online_real: [],	
+					offline_real: [],
+					time_real: []
+				  };
+				  liveDataUserRealtime=msg.liveDataUserRealtime;
+				  
+				  myChart11.data.labels = liveDataUserRealtime.time_real;
+				 myChart11.data.datasets[0].data = liveDataUserRealtime.offline_real;		
+				  //myChart11.data.datasets[1].data = liveDataUserRealtime.offline_real;
+				  //myChart11.data.datasets[1].data = liveDataUserRealtime.start_real
+				  //myChart11.data.datasets[1].data = liveDataUserRealtime.online_real;				  
+				  myChart11.update();
+				  
+			});
+
+
+
+
+
+
+
+
+        setInterval(function() {
+
+        
+           var val_nama_server = "Lexxa Net";
+		   var val_id = 149;
+           var val_nama = "WICAK";
+           var val_lisensi = "Noc Pop";
+
+            socket.emit('message', {
+                nama_server: val_nama_server,
+				id: val_id,
+                nama: val_nama,
+                lisensi: val_lisensi
+
+
+
+            });
+
+
+
+        }, 60000);
+		
+		
+		
+socket.on('log_non_physic_ticket', function(msg2) {
+	
+			! function (p) {
+    "use strict";
+
+    function t() {}
+    t.prototype.send = function (t, i, o, e, n, a, s, r) {
+        var c = {heading: t,text: i,position: o,loaderBg: e,icon: n,hideAfter: 5000,stack: s = s || 1 };
+        r && (c.showHideTransition = r), console.log(c), p.toast().reset("all"), p.toast(c)
+    }, p.NotificationApp = new t, p.NotificationApp.Constructor = t
+}(window.jQuery),
+function (i) {"use strict";
+
+	
+			if (msg2.nama_server=="Lexxa Net"){
+			
+			
+			if (msg2.status == 'FORWARD TO NOC') {
+			
+			
+			 i.NotificationApp.send("Open Ticket " +msg2.ticket_reference+ "", 
+			 "Name : "+msg2.nama+"</p>Priority : "+msg2.priority+"</p>Cause : "+msg2.deskripsi+"</p>By CS: "+msg2.nama_exekutor+"</p>", "top-right", "#bf441d", "error")
+			
+			
+			}else if(msg2.status == 'PROCESSED BY NOC') {
+			
+			
+			 i.NotificationApp.send("Proses Ticket " +msg2.ticket_reference+ "",  "Name : "+msg2.nama+"</p>Action : "+msg2.deskripsi+"</p>By NOC : "+msg2.nama_exekutor+"</p> ", "top-right", "#1ea69a", "info")
+			
+			
+			}else if(msg2.status == 'FORWARD TO TECHNICIAN') {
+			
+			
+			 i.NotificationApp.send("Forward Ticket " +msg2.ticket_reference+ "", ""+msg2.nama+"</p>Action : "+msg2.deskripsi+"</p>By NOC : "+msg2.nama_exekutor+"</p> ", "top-right","#1ea69a", "info")
+			
+			
+			}else if(msg2.status == 'PROCESSED BY TECHNICIAN') {
+			
+			
+			 i.NotificationApp.send("Proses Ticket " +msg2.ticket_reference+ "", ""+msg2.nama+"</p>Action : "+msg2.deskripsi+"</p>By TN: "+msg2.nama_exekutor+"</p> ", "top-right","#1ea69a", "info")
+			
+			
+			}else if(msg2.status == 'CLOSED BY NOC') {
+			
+			
+			 i.NotificationApp.send("Hold Ticket " +msg2.ticket_reference+ "", ""+msg2.nama+"</p>Action : "+msg2.deskripsi+"</p>By NOC: "+msg2.nama_exekutor+"</p> ", "top-right","#da8609", "warning")
+			
+			
+			}else if(msg2.status == 'CLOSED BY TECHNICIAN') {
+			
+			
+			 i.NotificationApp.send("Hold Ticket " +msg2.ticket_reference+ "", ""+msg2.nama+"</p>Action : "+msg2.deskripsi+"</p>By TN: "+msg2.nama_exekutor+"</p> ", "top-right","#da8609", "warning")
+			
+			
+			}else if(msg2.status == 'CLOSED BY CS') {
+			
+			
+			 i.NotificationApp.send("Closed Ticket " +msg2.ticket_reference+ "", ""+msg2.nama+"</p>Action : "+msg2.deskripsi+"</p>By CS: "+msg2.nama_exekutor+"</p> ", "top-right","#5ba035", "success")
+			
+			
+			}
+			
+			
+			}
+			console.log('ticket non',msg2);
+			
+			
+
+
+
+
+
+
+}(window.jQuery);
+			
+			
+			
+			
+			
+			
+			
+			});
+	  
+			socket.on('count_user', function(msg2) {
+			
+			if (msg2.nama_server=="Lexxa Net"){
+			
+			
+		
+			
+			
+			var div1 = document.getElementById('user_offline_count');
+				div1.innerHTML = '<h3 class="text-dark mt-1"><span data-plugin="counterup">'+msg2.count_offline+'</span></h3><p class="text-muted mb-1 text-truncate">OFFLINE USER</p></div>' ;
+			
+			
+			}
+			//console.log('online',msg2);
+			});
+
+
+		socket.on('radpostauth', function(msg3) {
+			
+			//$("#coba").load("coba.php",{
+				//nama_server : "Lexxa Net" 
+				
+				
+			//});
+			
+            if (msg3.nama_server == "Lexxa Net") {
+				
+			 //console.log('radpostauth',msg3);
+			 var radpost1 = document.getElementById('radpostauth_log');
+			var atBottom1 = isElementScrolledToBottom(radpost1);
+			var item1 = document.createElement('div');
+
+				
+				if (msg3.reply == 'Access-Accept') {
+                //    item1.innerHTML =
+                 //       '<div class="media p-2"><div class="media-body"><h5 class="mt-0 mb-0 font-13"><span class="float-right text-muted font-weight-normal font-11">' + msg3.authdate + '</span> U : //'  + msg3.username +' | P : ' + msg3.pass+
+                 //       '</h5><p class="mt-1 mb-0 text-muted font-11"><span class="w-25 float-right text-right"><span class="badge badge-soft-success">' + msg3.reply + '</span></span><span //class="w-75">CSI : ' + msg3.calledstationid +' | NAS : '+ msg3.nasidentifier +
+                //        '</span></p></div></div>';
+                 //   radpost1.appendChild(item1);
+
+                } else if (msg3.reply == 'Access-Reject') {
+                    item1.innerHTML =
+                        '<div class="media p-2"><div class="media-body"><h5 class="mt-0 mb-0 font-13"><span class="float-right text-muted font-weight-normal font-11">' +msg3.authdate + '</span> U : ' + msg3.username +' | P : ' + msg3.pass+' | NM : ' + msg3.nama+
+                        '</h5><p class="mt-1 mb-0 text-muted font-11"><span class="w-25 float-right text-right"><span class="badge badge-soft-danger">' + msg3.reply + '</span></span><span class="w-75">NAS : ' + msg3.nasidentifier +' | Modem : '+ msg3.modem_vendor +
+                        '</span></p></div></div>';
+                    radpost1.appendChild(item1);
+                }
+            }
+
+			if (atBottom1) {
+                scrollToBottom(radpost1);
+            }
+			
+			
+				
+			
+			
+			
+			
+			});
+			
+			
+
+        socket.on('message', function(msg) {
+           
+
+            if (msg.nama_server == "Lexxa Net") {
+				
+			var radpost = document.getElementById('online_log');
+			var atBottom = isElementScrolledToBottom(radpost);
+			var item = document.createElement('div');
+				
+                if (msg.status == 'ONLINE') {
+                    item.innerHTML =
+                        '<a href="javascript:void(0);" class="text-body"><div class="media p-2"><img src="../../assets/images/users/online.PNG" class="mr-2 rounded-circle" height="38" alt="Brandon Smith" /><div class="media-body"><h5 class="mt-0 mb-0 font-11"><span class="float-right text-muted font-weight-normal font-10">' +
+                        msg.waktu_update + '</span>' + msg.nama +'</h5><p class="mt-1 mb-0 text-muted font-12"><span class="w-25 float-right text-right"><span class="badge badge-soft-success">' + msg.terminating + '</span></span><span class="w-75">' + msg.alamat +'</span></p></div></div></a>';
+                    radpost.appendChild(item);
+                } else if (msg.status == 'OFFLINE') {
+                    item.innerHTML =
+                        '<a href="javascript:void(0);" class="text-body"><div class="media p-2"><img src="../../assets/images/users/offline.PNG" class="mr-2 rounded-circle" height="38" alt="Brandon Smith" /><div class="media-body"><h5 class="mt-0 mb-0 font-11"><span class="float-right text-muted font-weight-normal font-10">' +
+                        msg.waktu_update + '</span>' + msg.nama +'</h5><p class="mt-1 mb-0 text-muted font-12"><span class="w-25 float-right text-right"><span class="badge badge-soft-danger">' + msg.terminating + '</span></span><span class="w-75">' + msg.alamat +
+                        '</span></p></div></div></a>';
+                    radpost.appendChild(item);
+                }
+            }
+			if (atBottom) {
+                scrollToBottom(radpost);
+            }
+			
+			
+			
+        
+
+    });
+	
+	
+	
+	//function to check if element is scrolled to the bottom
+        function isElementScrolledToBottom(el) {
+            if (el.scrollTop >= (el.scrollHeight - el.offsetHeight)) {
+                return true;
+            }
+            return false;
+        }
+        //function to scroll to bottom
+        function scrollToBottom(el) {
+            el.scrollTop = el.scrollHeight;
+        }
+			
+        
+		
+		
+		
+});
+	
+	
+	
+	
+	
+	
+	
+    </script>
+
+
+
+    <script>
+   
+
+
+
+
+
+    $('#select_all').on('click', function() {
+        if (this.checked) {
+            $('.custom-control-input').each(function() {
+                this.checked = true;
+            })
+        } else {
+            $('.custom-control-input').each(function() {
+                this.checked = false;
+            })
+        }
+    });
+
+
+    $('.check').on('click', function() {
+        if ($('.check:checked').length == $('.check').length) {
+            $('#select_all').prop('checked', true)
+        } else {
+            $('#select_all').prop('checked', false)
+        }
+    })
+    </script>
+
+    <script>
+    $(document).ready(
+        function() {
+            "use strict";
+
+            $("#tickets-gangguan").DataTable({
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 5,
+                select: {
+                    style: "multi"
+                },
+                order: [
+                    [6, "desc"]
+                ],
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+ $("#data_tapologi_wireless").DataTable({
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 5,
+                select: {
+                    style: "multi"
+                },
+                order: [
+                    [5, "desc"]
+                ],
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+ $("#data_pop").DataTable({
+                language: {paginate: {previous: "<i class='mdi mdi-chevron-left'>",next: "<i class='mdi mdi-chevron-right'>"},info: "Showing customers _START_ to _END_ of _TOTAL_",lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'},
+                pageLength: 5,
+                select: {style: "multi"},
+                order: [[4, "desc"]],drawCallback: function() {$(".dataTables_paginate > .pagination").addClass("pagination-rounded")}
+            })
+
+$("#data_paket").DataTable({
+                language: {paginate: {previous: "<i class='mdi mdi-chevron-left'>",next: "<i class='mdi mdi-chevron-right'>"},info: "Showing customers _START_ to _END_ of _TOTAL_",lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'},
+                pageLength: 5,
+                select: {style: "multi"},
+                order: [[0, "asc"]],drawCallback: function() {$(".dataTables_paginate > .pagination").addClass("pagination-rounded")}
+            })
+
+$("#tickets-note").DataTable({
+    language: {
+        paginate: {
+            previous: "<i class='mdi mdi-chevron-left'>",
+            next: "<i class='mdi mdi-chevron-right'>"
+        },
+        info: "Showing customers _START_ to _END_ of _TOTAL_",
+        lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'>'
+            + '<option value="5">5</option>'
+            + '<option value="10">10</option>'
+            + '<option value="20">20</option>'
+            + '<option value="-1">All</option>'
+            + '</select> customers'
+    },
+    pageLength: 5, // <-- ubah default jadi 5
+    select: {
+        style: "multi"
+    },
+	sorting:false,
+    drawCallback: function() {
+        $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+    }
+});
+
+$("#tickets-metro").DataTable({
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 5,
+                select: {
+                    style: "multi"
+                },
+                order: [
+                    [5, "asc"]
+                ],
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+
+            $("#tickets-table").DataTable({
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 5,
+                select: {
+                    style: "multi"
+                },
+                order: [
+                    [6, "desc"]
+                ],
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+
+
+$("#data_ont").DataTable({
+                language: {paginate: {previous: "<i class='mdi mdi-chevron-left'>",next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 5,
+                select: {
+                    style: "multi"
+                },ordering:false,
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+
+
+
+
+
+
+$("#online_pppoe").DataTable({
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 5,
+                select: {
+                    style: "multi"
+                },
+                order: [
+                    [6, "desc"]
+                ],
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+
+
+            $("#reject_pppoe").DataTable({
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 5,
+                select: {
+                    style: "multi"
+                },
+                order: [
+                    [0, "desc"]
+                ],
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+
+
+            $("#offline_pppoe").DataTable({
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 5,
+                select: {
+                    style: "multi"
+                },
+                order: [
+                    [0, "desc"]
+                ],
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+
+
+            $("#data_finance").DataTable({
+                language: {
+                    paginate: {
+                        previous: "<i class='mdi mdi-chevron-left'>",
+                        next: "<i class='mdi mdi-chevron-right'>"
+                    },
+                    info: "Showing customers _START_ to _END_ of _TOTAL_",
+                    lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                },
+                pageLength: 10,
+                columns: [
+
+                    {
+                        orderable: !0
+                    },
+                    {
+                        orderable: !0
+                    },
+                    {
+                        orderable: !0
+                    },
+                    {
+                        orderable: !0
+                    },
+                    {
+                        orderable: !1
+                    }
+
+
+                ],
+                select: {
+                    style: "multi"
+                },
+                order: [
+                    [4, "asc"]
+                ],
+                drawCallback: function() {
+                    $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                }
+            })
+
+        });
+   
+
+
+ $(document).ready(
+                    function() {
+                        "use strict";
+                        $("#data_service").DataTable({
+                            language: {
+                                paginate: {
+                                    previous: "<i class='mdi mdi-chevron-left'>",
+                                    next: "<i class='mdi mdi-chevron-right'>"
+                                },
+                                info: "Showing customers _START_ to _END_ of _TOTAL_",
+                                lengthMenu: 'Display <select class=\'custom-select custom-select-sm ml-1 mr-1\'><option value="5">10</option><option value="10">10</option><option value="20">20</option><option value="-1">All</option></select> customers'
+                            },
+                            pageLength: 5,
+                            columns: [
+							{orderable: !0},
+                            {orderable: !0},
+                            {orderable: !0},
+                            {orderable: !0},
+                            {orderable: !0},
+							 {orderable: !0},
+							 
+                                {
+                                    orderable: !0
+                                },
+                                {
+                                    orderable: !0
+                                },
+                                {
+                                    orderable: !1
+                                }
+                            ],
+                            select: {
+                                style: "multi"
+                            },
+                            order: [
+                                [0, "asc"]
+                            ],
+                            drawCallback: function() {
+                                $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+                            }
+                        })
+                    });
+
+
+
+
+
+
+
+
+
+
+   </script>
+
+
+
+
+
+
+
+
+    <script type="text/javascript">
+    $(document).ready(function() {
+
+
+        $("#form_seri_olt").hide();
+        $("#form_des").hide();
+
+
+
+        // ambil data kecamatan/kota ketika data memilih kabupaten
+        $('body').on("change", "#form_olt", function() {
+            var id = $(this).val();
+            var data = "id=" + id + "&data=seri_olt";
+            $.ajax({
+                type: 'POST',
+                url: "data_olt/get_data.php",
+                data: data,
+                success: function(hasil) {
+                    $("#form_seri_olt").html(hasil);
+                    $("#form_seri_olt").show();
+                    $("#form_port").hide();
+                }
+            });
+        });
+
+
+    });
+    </script>
+
+
+
+
+
+
+
+
+
+</body>
+
+</html>
+

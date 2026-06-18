@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  api:
+    # This tells Compose to look for the Dockerfile in the current directory
+    build: .
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Mount local code for hot-reload (no rebuild needed for code changes)
+    volumes:
+      - .:/app
+    # Useful for connecting to services running on the host machine (outside Docker)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge

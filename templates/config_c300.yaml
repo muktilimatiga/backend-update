@@ -1,0 +1,28 @@
+# Template for ZTE C300 Series
+- "configure terminal"
+- "interface {{ interface_olt }}"
+- "onu {{ onu_id }} type {{ jenismodem }} sn {{ sn }}"
+- "exit"
+- "interface {{ interface_onu }}"
+- "name {{ customer.name }}"
+- "description {{ customer.address }}"
+- "sn-bind enable sn"
+- "tcont 1 name PPPOE profile UP-1000MB"
+- "gemport 1 name CIGNAL tcont 1"
+- "service-port 1 vport 1 user-vlan {{ vlan }} vlan {{ vlan }}"
+- "gemport 1 traffic-limit downstream DOWN-100M"
+- "exit"
+- "pon-onu-mng {{ interface_onu }}"
+- "service ServiceName gemport 1 cos 0 vlan {{ vlan }}"
+- "wan-ip 1 mode pppoe username {{ customer.pppoe_user }} password {{ customer.pppoe_pass }} vlan-profile vlan{{ vlan }} host 1"
+- "wan-ip 1 ping-response enable traceroute-response enable"
+- "security-mgmt 2 ingress-type wan mode forward state enable protocol web"
+- "tr069-mgmt 1 state unlock"
+- "tr069-mgmt 1 acs http://172.16.129.3:7547 validate basic username acs password acsadmin12345"
+# Loop for Ethernet port states
+{% for i in range(4) %}
+- "interface eth eth_0/{{ i + 1 }} state {{ 'lock' if eth_locks[i] else 'unlock' }}"
+{% endfor %}
+
+- "exit"
+- "exit"
