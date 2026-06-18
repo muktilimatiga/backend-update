@@ -167,55 +167,6 @@ core/
 templates/                  # Jinja2 YAML templates for OLT config
 ```
 
-## Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-# PostgreSQL
-DB_HOST=172.16.121.11
-DB_PORT=5435
-DB_NAME=data
-DB_USER=root
-DB_PASS=your_password
-
-# NMS/Billing Portal
-NMS_USERNAME=your_username
-NMS_PASSWORD=your_password
-NMS_USERNAME_BILING=your_billing_user
-NMS_PASSWORD_BILING=your_billing_pass
-
-# Portal URLs
-LOGIN_URL=https://nms.lexxadata.net.id/
-LOGIN_URL_BILLING=https://nms.lexxadata.net.id/clb.php
-DETAIL_URL_BILLING=https://nms.lexxadata.net.id/billing2/04/04201/index.php?csp=deusr&id={id}
-DETAIL_URL_NOC=https://nms.lexxadata.net.id/billing2/04/04101/index.php?tep=dp&id={id}
-BILLING_MODULE_BASE=https://nms.lexxadata.net.id/billing2/04/04201/
-SEARCH_NOC_URL=https://nms.lexxadata.net.id/billing2/04/04101/index.php?tep=seus
-TICKET_NOC_URL=https://nms.lexxadata.net.id/billing2/04/04101/index.php?tep=tin
-DATA_PSB_URL=https://nms.lexxadata.net.id/billing2/04/04101/index.php?tep=tps
-BILLING_URL_NEW=https://nms.lexxadata.net.id/billing2/04/04201/index.php?csp=deusr&id={}
-
-# OLT Credentials
-OLT_USERNAME=n0c
-OLT_PASSWORD=your_olt_password
-
-# Switch Credentials
-SWITCH_USERNAME=your_switch_user
-SWITCH_PASSWORD=your_switch_pass
-
-# Telegram Bot
-BOT_TOKEN=your_bot_token
-
-# Auth
-SECRET_KEY=your_secret_key
-DISABLE_AUTH=true
-
-# Supabase
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your_supabase_key
-```
-
 ## Key Features
 
 ### Billing/NOC Scraping
