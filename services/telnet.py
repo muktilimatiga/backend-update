@@ -1246,7 +1246,7 @@ class TelnetClient:
                 elif "gpon_onu-" in clean_iface:
                     clean_iface = clean_iface.replace("gpon_onu-", "")
                     
-                los_interfaces.append(clean_iface)
+                los_interfaces.append({"olt_name": self.olt_name, "interface": clean_iface})
         
         if not los_interfaces:
             logging.info(f"Tidak ada client LOS ditemukan pada interface {interface}.")
@@ -1255,85 +1255,3 @@ class TelnetClient:
         logging.info(f"Ditemukan {len(los_interfaces)} client LOS: {los_interfaces}")
         
         return los_interfaces
-
-    async def _get_coords_from_billing(self, user_pppoe: str) -> str:
-        try:
-            from services.biling_scaper import BillingScraper
-
-            def _fetch():
-                scraper = BillingScraper()
-                customers = scraper.search(user_pppoe)
-                if not customers:
-                    return None
-                cid = customers[0].get("id")
-                if not cid:
-                    return None
-                detail = scraper.get_customer_details(cid)
-                return detail.coordinate if detail else None
-
-            return await asyncio.to_thread(_fetch) or "N/A"
-        except Exception as e:
-            logging.warning(f"[LOS] Failed to fetch coords for {user_pppoe}: {e}")
-            return "N/A"
-
-    async def get_losi_client_fast(self, olt_name: str, interface: str) -> list[dict]:
-        """
-        Get LOS clients without coords (fast, no billing call).
-        """
-        from services.supabase_client import supabase
-
-        los_interfaces = await self.get_losi_interface(interface)
-        if not los_interfaces:
-            logging.info(f"Tidak ditemukan LOS client pada interface {interface}")
-            return []
-
-        results = []
-        for los_if in los_interfaces:
-            response = (
-                supabase.table("data_fiber")
-                .select("nama, user_pppoe, interface")
-                .eq("olt_name", olt_name)
-                .eq("interface", los_if)
-                .execute()
-            )
-            for customer in (response.data or []):
-                results.append({
-                    "nama": customer.get("nama", "Unknown"),
-                    "user_pppoe": customer.get("user_pppoe", ""),
-                    "interface": los_if,
-                })
-
-        logging.info(f"[LOS-FAST] Found {len(results)} LOS clients on {olt_name} {interface}")
-        return results
-
-    async def get_losi_client(self, olt_name: str, interface: str) -> list[dict]:
-        """
-        Get LOS clients with coords from billing (slower).
-        """
-        from services.supabase_client import supabase
-
-        los_interfaces = await self.get_losi_interface(interface)
-        if not los_interfaces:
-            logging.info(f"Tidak ditemukan LOS client pada interface {interface}")
-            return []
-
-        results = []
-        for los_if in los_interfaces:
-            response = (
-                supabase.table("data_fiber")
-                .select("nama, user_pppoe, interface")
-                .eq("olt_name", olt_name)
-                .eq("interface", los_if)
-                .execute()
-            )
-            for customer in (response.data or []):
-                user_pppoe = customer.get("user_pppoe", "")
-                coords = await self._get_coords_from_billing(user_pppoe)
-                results.append({
-                    "nama": customer.get("nama", "Unknown"),
-                    "user_pppoe": user_pppoe,
-                    "coords": coords,
-                })
-
-        logging.info(f"[LOS] Found {len(results)} LOS clients on {olt_name} {interface}")
-        return results

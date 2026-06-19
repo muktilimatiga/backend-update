@@ -4,66 +4,32 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 import io
 import asyncio
 import os
-import shutil
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 
 # --- Engine detection ---
-_paddle_available = False
-_tesseract_available = False
-_paddle_ocr = None
+_rapidocr_engine = None
 
 try:
-    from paddleocr import PaddleOCR
-
-    _paddle_ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
-    _paddle_available = True
-    print("[OCR] PaddleOCR engine loaded")
-except ImportError:
-    print("[OCR] PaddleOCR not available (install paddleocr + paddlepaddle on Linux)")
+    from rapidocr_onnxruntime import RapidOCR
+    _rapidocr_engine = RapidOCR()
+    print("[OCR] RapidOCR engine loaded")
 except Exception as e:
-    print(f"[OCR] PaddleOCR init error: {e}")
+    print(f"[OCR] RapidOCR not available: {e}")
 
-if not _paddle_available:
-    try:
-        import pytesseract
-
-        # Configure Tesseract path
-        if os.name == "nt":
-            tesseract_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-            if os.path.exists(tesseract_path):
-                pytesseract.pytesseract.tesseract_cmd = tesseract_path
-        else:
-            for path in ["/usr/bin/tesseract", "/usr/local/bin/tesseract", "/opt/tesseract/bin/tesseract"]:
-                if os.path.exists(path):
-                    pytesseract.pytesseract.tesseract_cmd = path
-                    break
-            else:
-                tesseract_in_path = shutil.which("tesseract")
-                if tesseract_in_path:
-                    pytesseract.pytesseract.tesseract_cmd = tesseract_in_path
-
-        version = pytesseract.get_tesseract_version()
-        _tesseract_available = True
-        print(f"[OCR] Tesseract fallback loaded (v{version})")
-    except Exception as e:
-        print(f"[OCR] Tesseract not available: {e}")
-
-if not _paddle_available and not _tesseract_available:
+if not _rapidocr_engine:
     print("[OCR] WARNING: No OCR engine available!")
 
-# Lazy-load YOLO+PaddleOCR pipeline
+# Lazy-load YOLO+RapidOCR pipeline
 _new_ocr_module = None
 
 
 def _init_new_ocr():
     global _new_ocr_module
-    if not _paddle_available:
-        return
     try:
         from services.new_ocr import run_pipeline_bytes
         _new_ocr_module = run_pipeline_bytes
-        print("[OCR] YOLO+PaddleOCR pipeline loaded")
+        print("[OCR] YOLO+RapidOCR pipeline loaded")
     except ImportError as e:
         print(f"[OCR] Could not load new_ocr pipeline: {e}")
     except Exception as e:
@@ -101,65 +67,38 @@ def _preprocess_image(image_bytes: bytes) -> Image.Image:
     return image
 
 
-def _ocr_with_paddleocr(image_bytes: bytes) -> str:
-    """Simple OCR using PaddleOCR."""
+def _ocr_with_rapidocr(image_bytes: bytes) -> str:
+    """Simple OCR using RapidOCR."""
     image = _preprocess_image(image_bytes)
     image = image.convert("RGB")
     img_array = np.array(image)
 
     try:
-        result = _paddle_ocr.ocr(img_array, cls=True)
-        if not result or not result[0]:
+        result, _elapse = _rapidocr_engine(img_array)
+        if not result:
             return ""
         texts = []
-        for line in result[0]:
-            if line and len(line) >= 2:
-                text = line[1][0]
-                if text and text.strip():
-                    texts.append(text.strip())
+        for item in result:
+            text = item[1]
+            confidence = item[2]
+            if text and text.strip() and confidence > 0.2:
+                texts.append(text.strip())
         return " ".join(texts)
     except Exception as e:
-        print(f"[OCR] PaddleOCR error: {e}")
+        print(f"[OCR] RapidOCR error: {e}")
         return ""
 
 
-def _ocr_with_tesseract(image_bytes: bytes) -> str:
-    """Simple OCR using Tesseract (fallback)."""
-    image = _preprocess_image(image_bytes)
-
-    import pytesseract
-
-    configs = [
-        r"--oem 3 --psm 3",
-        r"--oem 3 --psm 6",
-    ]
-
-    for config in configs:
-        try:
-            text = pytesseract.image_to_string(image, lang="eng", config=config, timeout=30)
-            if text and text.strip():
-                return text.strip()
-        except Exception:
-            continue
-
-    return ""
-
-
 def _process_image_ocr(image_bytes: bytes, lang: str = "en") -> str:
-    """OCR text extraction using best available engine."""
-    if _paddle_available:
-        return _ocr_with_paddleocr(image_bytes)
-    elif _tesseract_available:
-        return _ocr_with_tesseract(image_bytes)
+    """OCR text extraction using RapidOCR."""
+    if _rapidocr_engine:
+        return _ocr_with_rapidocr(image_bytes)
     return ""
 
 
 def _process_image_yolo_ocr(image_bytes: bytes) -> dict:
-    """Full YOLO+PaddleOCR pipeline. Requires PaddleOCR."""
+    """Full YOLO+RapidOCR pipeline."""
     global _new_ocr_module
-
-    if not _paddle_available:
-        return {"error": "PaddleOCR not available", "modem_type": None, "sn": None}
 
     if _new_ocr_module is None:
         _init_new_ocr()
@@ -178,12 +117,12 @@ def _process_image_yolo_ocr(image_bytes: bytes) -> dict:
 async def extract_text(file: UploadFile = File(...)):
     """
     Upload an image and extract text using OCR.
-    Uses PaddleOCR on Linux, Tesseract fallback on macOS Intel.
+    Uses RapidOCR engine.
     """
-    if not _paddle_available and not _tesseract_available:
+    if not _rapidocr_engine:
         raise HTTPException(
             status_code=503,
-            detail="No OCR engine available. Install paddleocr+paddlepaddle (Linux) or pytesseract+Tesseract.",
+            detail="No OCR engine available. Install rapidocr-onnxruntime.",
         )
 
     if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:
@@ -203,13 +142,13 @@ async def extract_text(file: UploadFile = File(...)):
 @router.post("/ocr/detect")
 async def detect_modem(file: UploadFile = File(...)):
     """
-    Upload an image and detect modem type + serial number using YOLO+PaddleOCR.
-    Requires PaddleOCR (Linux or macOS arm64).
+    Upload an image and detect modem type + serial number using YOLO+RapidOCR.
+    Requires RapidOCR.
     """
-    if not _paddle_available:
+    if not _rapidocr_engine:
         raise HTTPException(
             status_code=503,
-            detail="YOLO detection requires PaddleOCR. Install paddleocr+paddlepaddle (Linux only).",
+            detail="YOLO detection requires RapidOCR. Install rapidocr-onnxruntime.",
         )
 
     if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:
@@ -256,6 +195,6 @@ def read_text_file(file: UploadFile = File(...)):
             "status": "success",
         }
     except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="File is not valid UTF-8 text")
+        raise HTTPException(status_code=400, detail="File is not valid UTF-8")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

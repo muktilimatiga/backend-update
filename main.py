@@ -12,9 +12,9 @@ app = FastAPI(
 
 # --- FIX: Define specific origins ---
 origins = [
-    "http://localhost:3000",     # React (localhost)
-    "http://127.0.0.1:3000",     # React (127.0.0.1)
-    "http://localhost:8001",     # Swagger UI internal calls
+    "http://localhost:8002",     # React (localhost)
+    "http://127.0.0.1:8002",     # React (127.0.0.1)
+    "http://localhost:8002",     # Swagger UI internal calls
 ]
 
 app.add_middleware(

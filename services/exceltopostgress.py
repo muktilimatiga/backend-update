@@ -107,12 +107,8 @@ class ExcelHandler:
         cur.execute(f"TRUNCATE TABLE {TABLE_NAME};")
         conn.commit()
 
-        # 3. WIPE SUPABASE (Best Effort)
-        print("3. Wiping Supabase (If possible)...")
-        try:
-            supabase.table(TABLE_NAME).delete().neq("user_pppoe", "______").execute()
-        except Exception as e:
-            print(f"   [NOTE] Supabase wipe error (ignored): {e}")
+        # 3. Skip Supabase wipe — upsert will merge without destroying existing data (e.g. coordinates)
+        print("3. Supabase: using upsert to preserve existing data...")
 
         # 4. READ EXCEL
         print("4. Reading Excel...")
@@ -137,7 +133,7 @@ class ExcelHandler:
         def insert_remote(batch):
             try:
                 # We use standard insert. If Supabase rejects duplicates (409), we catch it.
-                supabase.table(TABLE_NAME).insert(batch).execute()
+                supabase.table(TABLE_NAME).upsert(batch, on_conflict="user_pppoe").execute()
             except Exception as e:
                 # Convert exception to string to check for 409 Conflict
                 err_str = str(e)

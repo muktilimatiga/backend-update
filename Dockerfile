@@ -16,7 +16,7 @@ FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
-# 1. Install System Tools (PaddleOCR dependencies)
+# 1. Install System Tools (OpenCV dependencies)
 # Note: I removed 'chromium' and 'chromium-driver' because Playwright manages its own.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \

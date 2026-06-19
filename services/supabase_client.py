@@ -1,3 +1,4 @@
+from httpx import request
 import sys
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from supabase import create_client
 from core import settings
 import logging
 import datetime as dt
+from typing import List
 
 # Initialize Supabase client
 supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
@@ -185,6 +187,18 @@ def save_billing_data_sync(data: dict):
         logging.error(f"[SUPABASE] Exception in save_billing_data_sync: {e}")
         raise e
 
+async def get_losi_client(interfaces: list[str], olt_name: str) -> list[dict]:
+    """Get LOS customers from data_fiber by matching interfaces and olt_name."""
+    if not interfaces:
+        return []
+
+    def _query():
+        return supabase.table("data_fiber").select("*").eq("olt_name", olt_name).in_("interface", interfaces).execute()
+
+    response = await asyncio.to_thread(_query)
+    return response.data
+
+
 # --- LIBRENMS ---
 async def update_data(data: list[dict]) -> bool:
     """
@@ -226,3 +240,4 @@ async def search_libre_data(search_term: str, limit: int = 20):
         
     response = query.limit(limit).execute()
     return response.data
+

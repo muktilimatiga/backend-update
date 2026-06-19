@@ -6,10 +6,13 @@ import asyncio
 
 from core import settings, OLT_OPTIONS, get_olt_info
 from schemas.onu_handler import (
-    OnuDetailRequest, OnuDetailResponse, OnuDbaResponse, LockEthRequest, LockEthResponse, EditCapacityRequest, EditCapacityResponse
+    OnuDetailRequest, OnuDetailResponse, OnuDbaResponse, LockEthRequest, LockEthResponse, EditCapacityRequest, EditCapacityResponse,
+    CustomerLosiResponse, CustomerLosiCoordsResponse
 )
+from fastapi import APIRouter, HTTPException, Query
 from services.telnet import TelnetClient
 from services.connection_manager import olt_manager
+from services.supabase_client import get_losi_client
 
 router = APIRouter()
 
@@ -316,3 +319,98 @@ async def edit_capacity(olt_name: str, request: EditCapacityRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+
+@router.post("/{olt_name}/onu/get-losi")
+async def get_losi(olt_name: str, request: OnuDetailRequest):
+    olt_info = get_olt_info(olt_name)
+    if not olt_info:
+        raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
+    
+    try:
+        handler = await olt_manager.get_connection(
+            host=olt_info["ip"],
+            username=settings.OLT_USERNAME,
+            password=settings.OLT_PASSWORD,
+            is_c600=olt_info["c600"],
+            olt_name=olt_name
+        )
+        
+        los_data = await handler.get_losi_interface(request.interface)
+
+        if not los_data:
+            return []
+
+        # Extract interfaces for Supabase query
+        los_interfaces = [item["interface"] for item in los_data]
+        customers = await get_losi_client(los_interfaces, olt_name)
+
+        return [{"nama": c.get("nama"), "user_pppoe": c.get("user_pppoe")} for c in customers]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/customer-losi", response_model=list[CustomerLosiResponse])
+async def get_customer_data_losi(
+    olt_name: str = Query(..., min_length=1, description="OLT Name"),
+    interface: str = Query(..., min_length=1, description="Interface Name"),
+):
+    olt_info = get_olt_info(olt_name)
+    if not olt_info:
+        raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
+
+    try:
+        handler = await olt_manager.get_connection(
+            host=olt_info["ip"],
+            username=settings.OLT_USERNAME,
+            password=settings.OLT_PASSWORD,
+            is_c600=olt_info["c600"],
+            olt_name=olt_name
+        )
+
+        base_interface = interface.split(":")[0]
+        los_data = await handler.get_losi_interface(base_interface)
+
+        if not los_data:
+            return []
+
+        los_interfaces = [item["interface"] for item in los_data]
+        customers = await get_losi_client(los_interfaces, olt_name)
+
+        return [{"nama": c.get("nama"), "user_pppoe": c.get("user_pppoe")} for c in customers]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/customer-losi-coords", response_model=list[CustomerLosiCoordsResponse])
+async def get_customer_data_losi_coords(
+    olt_name: str = Query(..., min_length=1, description="OLT Name"),
+    interface: str = Query(..., min_length=1, description="Interface Name"),
+):
+    olt_info = get_olt_info(olt_name)
+    if not olt_info:
+        raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
+
+    try:
+        handler = await olt_manager.get_connection(
+            host=olt_info["ip"],
+            username=settings.OLT_USERNAME,
+            password=settings.OLT_PASSWORD,
+            is_c600=olt_info["c600"],
+            olt_name=olt_name
+        )
+
+        base_interface = interface.split(":")[0]
+        los_data = await handler.get_losi_interface(base_interface)
+
+        if not los_data:
+            return []
+
+        los_interfaces = [item["interface"] for item in los_data]
+        customers = await get_losi_client(los_interfaces, olt_name)
+
+        return [{"nama": c.get("nama"), "user_pppoe": c.get("user_pppoe"), "coordinates": c.get("coordinates")} for c in customers]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

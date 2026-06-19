@@ -119,3 +119,12 @@ class EditCapacityRequest(BaseModel):
 
 class EditCapacityResponse(BaseModel):
     status: str
+
+class CustomerLosiResponse(BaseModel):
+    nama: Optional[str] = None
+    user_pppoe: Optional[str] = None
+
+class CustomerLosiCoordsResponse(BaseModel):
+    nama: Optional[str] = None
+    user_pppoe: Optional[str] = None
+    coordinates: Optional[str] = None

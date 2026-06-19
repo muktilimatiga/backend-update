@@ -7,7 +7,7 @@
 - "name {{ customer.name }}"
 - "description {{ customer.address }}"
 - "sn-bind enable sn"
-- "tcont 1 name PPPOE profile UP-1000MB"
+- "tcont 1 name PPPOE profile UP-100MB"
 - "gemport 1 name CIGNAL tcont 1"
 - "service-port 1 vport 1 user-vlan {{ vlan }} vlan {{ vlan }}"
 - "gemport 1 traffic-limit downstream DOWN-100M"

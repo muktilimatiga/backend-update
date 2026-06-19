@@ -16,6 +16,8 @@ from schemas.customers_scrapper import (
     CustomerInvoice,
     CustomerNOC,
     CustomerNOCResponse,
+    CutomerLosiResponse,
+    CustomerLosiCoordsResponse
 )
 from services.biling_scaper import BillingScraper, NOCScrapper
 from services.supabase_client import search_customers, save_billing_data_sync
@@ -278,3 +280,27 @@ async def get_customer_data_noc_billing_test(
 
     logger.info(f"[customer-noc-billing-test] Returning {len(customers)} customers")
     return CustomerNOCResponse(customers=customers, count=len(customers))
+
+@router.get("/customer-losi", response_model=List[CutomerLosiResponse])
+async def get_customer_data_losi(
+    olt_name: str = Query(
+        ..., min_length=1, description="OLT Name"
+    ),
+    interface: str = Query(
+        ..., min_length=1, description="Interface Name"
+    ),
+):
+    pass
+
+@router.get("/customer-losi-coords", response_model=List[CustomerLosiCoordsResponse])
+async def get_customer_data_losi_coords(
+    olt_name: str = Query(
+        ..., min_length=1, description="OLT Name"
+    ),
+    interface: str = Query(
+        ..., min_length=1, description="Interface Name"
+    ),
+):
+    pass
+    
+    

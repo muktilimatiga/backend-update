@@ -108,3 +108,12 @@ class CustomerNOC(BaseModel):
 class CustomerNOCResponse(BaseModel):
     customers: List[CustomerNOC]
     count: int
+
+class CutomerLosiResponse(BaseModel):
+    nama: Optional[str] = None
+    user_pppoe: Optional[str] = None
+
+class CustomerLosiCoordsResponse(CutomerLosiResponse):
+    coordinates: Optional[str] = None
+    
+    

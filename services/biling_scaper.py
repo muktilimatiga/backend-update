@@ -1059,7 +1059,9 @@ class NOCScrapper:
             return None
 
     def _login(self):
+        print("[NOC] Checking cached cookies...")
         if self._load_cookies() and self._is_logged_in():
+            print("[NOC] Cached cookies valid, skipping login")
             return
 
         from urllib.parse import urljoin
@@ -1069,7 +1071,9 @@ class NOCScrapper:
 
         for attempt in range(max_attempts):
             try:
+                print(f"[NOC] Login attempt {attempt + 1}/{max_attempts}")
                 captcha_text = self._solve_captcha(captcha_url)
+                print(f"[NOC] CAPTCHA result: '{captcha_text}'")
 
                 payload = {
                     "username": settings.NMS_USERNAME,
@@ -1077,6 +1081,8 @@ class NOCScrapper:
                 }
                 if captcha_text:
                     payload["captcha"] = captcha_text
+                else:
+                    print("[NOC] WARNING: No CAPTCHA text, submitting without captcha")
 
                 r = self.session.post(
                     settings.LOGIN_URL_BILLING,
@@ -1085,18 +1091,24 @@ class NOCScrapper:
                     timeout=10,
                 )
 
+                print(f"[NOC] Response: status={r.status_code} url={r.url}")
+
                 if r.status_code not in (200, 302):
+                    print(f"[NOC] Unexpected status code {r.status_code}, retrying...")
                     continue
                 if "login" in r.url.lower() or "pesan=" in r.url.lower():
+                    print(f"[NOC] Still on login page after POST, retrying...")
                     if attempt < max_attempts - 1:
                         time.sleep(1)
                         continue
                     else:
                         raise ConnectionError("NOC login failed after multiple attempts")
                 else:
+                    print("[NOC] Login successful!")
                     self._save_cookies()
                     return
-            except requests.RequestException:
+            except requests.RequestException as e:
+                print(f"[NOC] Request error: {e}")
                 if attempt < max_attempts - 1:
                     time.sleep(1)
                     continue
