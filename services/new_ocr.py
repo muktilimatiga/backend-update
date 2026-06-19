@@ -1,5 +1,5 @@
 """
-YOLO + RapidOCR pipeline for modem type and serial number detection.
+YOLO + PaddleOCR pipeline for modem type and serial number detection.
 
 Uses YOLO to detect regions on modem labels, then:
 - Logo regions (C-DATA, F670L): trust YOLO class name directly
@@ -245,7 +245,7 @@ def run_pipeline_bytes(image_bytes: bytes, model_path: str = MODEL_PATH, conf: f
 def main():
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    parser = argparse.ArgumentParser(description="YOLO + RapidOCR modem detection pipeline")
+    parser = argparse.ArgumentParser(description="YOLO + PaddleOCR modem detection pipeline")
     parser.add_argument("image", help="Path to input image")
     parser.add_argument("--model", default=MODEL_PATH, help="Path to YOLO .pt model")
     parser.add_argument("--conf", type=float, default=0.25, help="YOLO confidence threshold (default: 0.25)")

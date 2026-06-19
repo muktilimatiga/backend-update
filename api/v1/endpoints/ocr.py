@@ -8,19 +8,19 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 
 # --- Engine detection ---
-_rapidocr_engine = None
+_paddleocr_engine = None
 
 try:
-    from rapidocr_onnxruntime import RapidOCR
-    _rapidocr_engine = RapidOCR()
-    print("[OCR] RapidOCR engine loaded")
+    from paddleocr import PaddleOCR
+    _paddleocr_engine = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+    print("[OCR] PaddleOCR engine loaded")
 except Exception as e:
-    print(f"[OCR] RapidOCR not available: {e}")
+    print(f"[OCR] PaddleOCR not available: {e}")
 
-if not _rapidocr_engine:
+if not _paddleocr_engine:
     print("[OCR] WARNING: No OCR engine available!")
 
-# Lazy-load YOLO+RapidOCR pipeline
+# Lazy-load YOLO+PaddleOCR pipeline
 _new_ocr_module = None
 
 
@@ -29,7 +29,7 @@ def _init_new_ocr():
     try:
         from services.new_ocr import run_pipeline_bytes
         _new_ocr_module = run_pipeline_bytes
-        print("[OCR] YOLO+RapidOCR pipeline loaded")
+        print("[OCR] YOLO+PaddleOCR pipeline loaded")
     except ImportError as e:
         print(f"[OCR] Could not load new_ocr pipeline: {e}")
     except Exception as e:
@@ -67,37 +67,37 @@ def _preprocess_image(image_bytes: bytes) -> Image.Image:
     return image
 
 
-def _ocr_with_rapidocr(image_bytes: bytes) -> str:
-    """Simple OCR using RapidOCR."""
+def _ocr_with_paddleocr(image_bytes: bytes) -> str:
+    """Simple OCR using PaddleOCR."""
     image = _preprocess_image(image_bytes)
     image = image.convert("RGB")
     img_array = np.array(image)
 
     try:
-        result, _elapse = _rapidocr_engine(img_array)
-        if not result:
+        result = _paddleocr_engine.ocr(img=img_array, cls=True)
+        if not result or not result[0]:
             return ""
         texts = []
-        for item in result:
-            text = item[1]
-            confidence = item[2]
+        for line in result[0]:
+            text = line[1][0]
+            confidence = line[1][1]
             if text and text.strip() and confidence > 0.2:
                 texts.append(text.strip())
         return " ".join(texts)
     except Exception as e:
-        print(f"[OCR] RapidOCR error: {e}")
+        print(f"[OCR] PaddleOCR error: {e}")
         return ""
 
 
 def _process_image_ocr(image_bytes: bytes, lang: str = "en") -> str:
-    """OCR text extraction using RapidOCR."""
-    if _rapidocr_engine:
-        return _ocr_with_rapidocr(image_bytes)
+    """OCR text extraction using PaddleOCR."""
+    if _paddleocr_engine:
+        return _ocr_with_paddleocr(image_bytes)
     return ""
 
 
 def _process_image_yolo_ocr(image_bytes: bytes) -> dict:
-    """Full YOLO+RapidOCR pipeline."""
+    """Full YOLO+PaddleOCR pipeline."""
     global _new_ocr_module
 
     if _new_ocr_module is None:
@@ -117,12 +117,12 @@ def _process_image_yolo_ocr(image_bytes: bytes) -> dict:
 async def extract_text(file: UploadFile = File(...)):
     """
     Upload an image and extract text using OCR.
-    Uses RapidOCR engine.
+    Uses PaddleOCR engine.
     """
-    if not _rapidocr_engine:
+    if not _paddleocr_engine:
         raise HTTPException(
             status_code=503,
-            detail="No OCR engine available. Install rapidocr-onnxruntime.",
+            detail="No OCR engine available. Install paddleocr.",
         )
 
     if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:
@@ -142,13 +142,13 @@ async def extract_text(file: UploadFile = File(...)):
 @router.post("/ocr/detect")
 async def detect_modem(file: UploadFile = File(...)):
     """
-    Upload an image and detect modem type + serial number using YOLO+RapidOCR.
-    Requires RapidOCR.
+    Upload an image and detect modem type + serial number using YOLO+PaddleOCR.
+    Requires PaddleOCR.
     """
-    if not _rapidocr_engine:
+    if not _paddleocr_engine:
         raise HTTPException(
             status_code=503,
-            detail="YOLO detection requires RapidOCR. Install rapidocr-onnxruntime.",
+            detail="YOLO detection requires PaddleOCR. Install paddleocr.",
         )
 
     if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:

@@ -1,7 +1,7 @@
 """
 SN Extractor — Dedicated serial number extraction from cropped modem label images.
 
-Uses RapidOCR with 8 preprocessing variants and a scoring system to pick the
+Uses PaddleOCR with 8 preprocessing variants and a scoring system to pick the
 best candidate. Optimized for CPU-only Linux containers.
 """
 
@@ -9,7 +9,7 @@ import re
 import logging
 import cv2
 import numpy as np
-from rapidocr_onnxruntime import RapidOCR
+from paddleocr import PaddleOCR
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,8 @@ class SNExtractor:
     """Extract serial numbers from cropped modem label images."""
 
     def __init__(self):
-        self._ocr = RapidOCR()
-        logger.info("[SNExtractor] RapidOCR engine initialized")
+        self._ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+        logger.info("[SNExtractor] PaddleOCR engine initialized")
 
     # ------------------------------------------------------------------
     # Public API
@@ -140,13 +140,13 @@ class SNExtractor:
 
     def _run_ocr(self, image: np.ndarray) -> list:
         """
-        Run RapidOCR on image, return list of (text, confidence) tuples.
+        Run PaddleOCR on image, return list of (text, confidence) tuples.
         """
         try:
-            result, _elapse = self._ocr(image)
-            if not result:
+            result = self._ocr.ocr(img=image, cls=True)
+            if not result or not result[0]:
                 return []
-            return [(item[1], item[2]) for item in result if item[1] and item[1].strip()]
+            return [(line[1][0], line[1][1]) for line in result[0] if line[1][0] and line[1][0].strip()]
         except Exception as e:
             logger.debug(f"  [OCR] error: {e}")
             return []
