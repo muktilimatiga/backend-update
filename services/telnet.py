@@ -107,8 +107,16 @@ class TelnetClient:
         template = COMMAND_TEMPLATES.get(action, {}).get(device, [])
         return [cmd.format(**kwargs) for cmd in template]
 
+    async def __aenter__(self):
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+        return False
+
     async def connect(self):
-        """Fungsi connect manual (pengganti __aenter__)"""
+        """Fungsi connect manual"""
         if self.writer and not self.writer.is_closing():
             return  # Sudah konek, skip
 
@@ -933,11 +941,6 @@ class TelnetClient:
             onu_id = await self.find_next_available_onu_id(base_iface)
             logs.append(f"INFO < ONU ID tersedia: {onu_id}")
 
-            # Step 4: Check DBA rate
-            current_step = "Mengecek DBA rate"
-            logs.append(f"STEP > {current_step}...")
-            rate = await self.get_dba_rate(base_iface)
-            logs.append(f"INFO < DBA Rate: {rate}%")
 
 
             # Modem type mapping
@@ -951,8 +954,8 @@ class TelnetClient:
                     f"gpon_onu-1/{target_ont.pon_port}/{target_ont.pon_slot}:{onu_id}"
                 )
 
-            # Prepare ETH locks
-            locks = config_request.eth_locks
+            # Prepare ETH locks (copy to avoid mutating the request object)
+            locks = list(config_request.eth_locks)
             if len(locks) == 1:
                 locks = locks * 4
             elif len(locks) < 4:
@@ -1036,6 +1039,7 @@ class TelnetClient:
                 "pppoe_user": config_request.customer.pppoe_user,
                 "name": config_request.customer.name,
                 "location": iface_onu,
+                "profile": olt_profile_type,
                 "report": report,
             }
 
@@ -1130,7 +1134,7 @@ class TelnetClient:
             return logs, summary
 
     async def config_bridge(
-        self, config_bridge_request: ConfigurationBridgeRequest, vlan: str
+        self, config_bridge_request: ConfigurationBridgeRequest
     ):
         ont_list = await self.find_unconfigured_onts()
         target_ont = next(
@@ -1143,41 +1147,39 @@ class TelnetClient:
 
         base_iface = f"gpon-olt_1/{target_ont.pon_slot}/{target_ont.pon_port}"
         if self.is_c600:
-            base_iface = f"gpon_olt-1/{target_ont.pon_slot}/{target_ont.pon_port}"
+            base_iface = f"gpon_olt-1/{target_ont.pon_port}/{target_ont.pon_slot}"
 
         onu_id = await self.find_next_available_onu_id(base_iface)
         package = PACKAGE_OPTIONS[config_bridge_request.package]
         olt_profile_type = (
             "F670" if config_bridge_request.modem_type == "ZTEG-F670" else "ALL"
         )
-        vlan = vlan(config_bridge_request.vlan)
 
-        iface_onu = f"{'gpon_onu-1' if self.is_c600 else 'gpon-onu_1'}/{target_ont.pon_slot}/{target_ont.pon_port}:{onu_id}"
+        iface_onu = f"gpon-onu_1/{target_ont.pon_slot}/{target_ont.pon_port}:{onu_id}"
         if self.is_c600:
-            iface_onu = (
-                f"gpon_onu-1/{target_ont.pon_port}/{target_ont.pon_slot}:{onu_id}"
-            )
+            iface_onu = f"gpon_onu-1/{target_ont.pon_port}/{target_ont.pon_slot}:{onu_id}"
 
-            context = {
-                "interface_olt": base_iface,
-                "interface_onu": iface_onu,
-                "pon_slot": target_ont.pon_slot,
-                "pon_port": target_ont.pon_port,
-                "onu_id": onu_id,
-                "sn": config_bridge_request.sn,
-                "customer": config_bridge_request.customer,
-                "vlan": config_bridge_request.vlan,
-                "paket": config_bridge_request.package,
-                "jenismodem": olt_profile_type,
-            }
+        context = {
+            "interface_olt": base_iface,
+            "interface_onu": iface_onu,
+            "pon_slot": target_ont.pon_slot,
+            "pon_port": target_ont.pon_port,
+            "onu_id": onu_id,
+            "sn": config_bridge_request.sn,
+            "customer": config_bridge_request.customer,
+            "vlan": config_bridge_request.vlan,
+            "paket": config_bridge_request.package,
+            "jenismodem": olt_profile_type,
+        }
 
         template_name = "config_bridge.yaml"
 
         def _render_and_parse_yaml():
             if jinja_env is None:
                 raise RuntimeError("Jinja2 environment not loaded!")
-            template = jinja_env(template_name)
+            template = jinja_env.get_template(template_name)
             rendered = template.render(context)
+            return yaml.safe_load(rendered)
 
         commands = await asyncio.to_thread(_render_and_parse_yaml)
         logs = [
@@ -1194,25 +1196,36 @@ class TelnetClient:
             await asyncio.sleep(0.3)
 
         summary = {
-            "Serial Number": config_bridge_request.sn,
-            "ID Pelanggan": config_bridge_request.customer.pppoe_user,
-            "Nama Pelanggan": config_bridge_request.customer,
-            "OLT dan ONU": iface_onu,
-            "Profil yang dipakai": config_bridge_request.package,
+            "status": "success",
+            "message": "Konfigurasi bridge berhasil",
+            "serial_number": config_bridge_request.sn,
+            "pppoe_user": config_bridge_request.customer.pppoe_user,
+            "name": config_bridge_request.customer.name,
+            "location": iface_onu,
+            "profile": olt_profile_type,
+            "report": "\n".join([
+                "=========================================================",
+                "              KONFIGURASI BRIDGE SELESAI                 ",
+                "=========================================================",
+                f"  Serial Number      : {config_bridge_request.sn}",
+                f"  ID Pelanggan       : {config_bridge_request.customer.pppoe_user}",
+                f"  Nama Pelanggan     : {config_bridge_request.customer.name}",
+                f"  OLT dan ONU        : {iface_onu}",
+                f"  Profil             : {olt_profile_type}",
+                "=========================================================",
+            ]),
         }
 
-        logs.extend(
-            [
-                "KONFIGURASI SELESAI",
-                "=========================================================",
-                f"Serial Number         : {config_bridge_request.sn}",
-                f"ID pelanggan          : {config_bridge_request.customer.pppoe_user}",
-                f"Nama pelanggan        : {config_bridge_request.customer.name}",
-                f"OLT dan ONU           : {iface_onu}",
-                f"Profil yang dipakai   : {config_bridge_request.package}",
-                "=========================================================",
-            ]
-        )
+        logs.extend([
+            "KONFIGURASI SELESAI",
+            "=========================================================",
+            f"Serial Number         : {config_bridge_request.sn}",
+            f"ID pelanggan          : {config_bridge_request.customer.pppoe_user}",
+            f"Nama pelanggan        : {config_bridge_request.customer.name}",
+            f"OLT dan ONU           : {iface_onu}",
+            f"Profil yang dipakai   : {config_bridge_request.package}",
+            "=========================================================",
+        ])
 
         return logs, summary
 
@@ -1247,6 +1260,7 @@ class TelnetClient:
                     clean_iface = clean_iface.replace("gpon_onu-", "")
                     
                 los_interfaces.append({"olt_name": self.olt_name, "interface": clean_iface})
+                logging.info(f"{los_interfaces}")
         
         if not los_interfaces:
             logging.info(f"Tidak ada client LOS ditemukan pada interface {interface}.")

@@ -13,7 +13,6 @@ from schemas.config_handler import (
     ConfigurationSummary,
     OptionsResponse,
     ConfigurationBridgeRequest,
-    CongigurationBridgeResponse,
     BatchConfigurationRequest,
     BatchItemResult,
     BatchConfigurationResponse,
@@ -29,6 +28,8 @@ from services.database import (
     save_customer_config_async,
     fetch_paket_from_billing,
 )
+from services.supabase_client import get_losi_client as fetch_losi_clients_from_db
+from api.v1.endpoints.customer_scrapper import get_customer_data_noc_billing_test
 
 router = APIRouter()
 
@@ -212,10 +213,10 @@ async def run_configuration(olt_name: str, request: ConfigurationRequest):
 
 
 @router.post(
-    "api/olts/{olt_name}/config_bridge", response_model=CongigurationBridgeResponse
+    "/api/olts/{olt_name}/config_bridge", response_model=ConfigurationResponse
 )
 async def run_configuration_bridge(olt_name: str, request: ConfigurationBridgeRequest):
-    "Menjalankan konfigurasi bridge"
+    """Menjalankan konfigurasi bridge untuk satu ONT."""
     olt_info = OLT_OPTIONS.get(olt_name.upper())
     if not olt_info:
         raise HTTPException(
@@ -223,30 +224,51 @@ async def run_configuration_bridge(olt_name: str, request: ConfigurationBridgeRe
         )
 
     try:
-        async with TelnetClient(
+        handler = await olt_manager.get_connection(
             host=olt_info["ip"],
             username=settings.OLT_USERNAME,
             password=settings.OLT_PASSWORD,
             is_c600=olt_info["c600"],
-        ) as handler:
-            logs, summary = await handler.config_bridge(request)
-            logs.append("INFO < Database save functionality not yet implemented.")
+            olt_name=olt_name.upper(),
+        )
+        logs, summary = await handler.config_bridge(request)
+
+        if summary["status"] == "error":
+            logs.append("ERROR < Konfigurasi bridge gagal. Lihat report untuk detail.")
+        else:
+            from services.supabase_client import save_customer_config
+
+            db_saved = await save_customer_config(
+                user_pppoe=request.customer.pppoe_user,
+                nama=request.customer.name,
+                alamat=request.customer.address,
+                olt_name=olt_name.upper(),
+                interface=summary["location"],
+                onu_sn=request.sn,
+                pppoe_password=request.customer.pppoe_pass,
+                paket=request.package,
+            )
+            if db_saved:
+                logs.append("INFO < Data pelanggan berhasil disimpan ke Supabase.")
+            else:
+                logs.append(
+                    "WARN < Gagal menyimpan ke Supabase, konfigurasi bridge tetap berhasil."
+                )
 
         return ConfigurationResponse(
-            message="Konfigurasi Berhasil",
+            message=summary["message"],
             summary=ConfigurationSummary(**summary),
             logs=logs,
         )
 
     except (ConnectionError, asyncio.TimeoutError) as e:
         raise HTTPException(
-            status_code=504,
-            detail=f"Gagal terhubung atau timeout saat koneksi ke OLT: {e}",
+            status_code=504, detail=f"Gagal terhubung ke OLT: {e}"
         )
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Proses konfigurasi gagal: {e}")
+        raise HTTPException(status_code=500, detail=f"System error: {e}")
 
 
 @router.post(
@@ -516,8 +538,21 @@ async def get_losi_client(
             username=settings.OLT_USERNAME,
             password=settings.OLT_PASSWORD,
             is_c600=olt_info.get("c600", False),
+            olt_name=actual_olt_name,
         ) as handler:
-            return await handler.get_losi_client_fast(actual_olt_name, interface)
+            los_list = await handler.get_losi_interface(interface)
+            if not los_list:
+                return []
+            interfaces = [item["interface"] for item in los_list]
+            customers = await fetch_losi_clients_from_db(interfaces, actual_olt_name)
+            return [
+                {
+                    "interface": c.get("interface"),
+                    "nama": c.get("nama"),
+                    "user_pppoe": c.get("user_pppoe"),
+                }
+                for c in customers
+            ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get LOS clients: {e}")
 
@@ -539,8 +574,75 @@ async def get_losi_client_coords(
             username=settings.OLT_USERNAME,
             password=settings.OLT_PASSWORD,
             is_c600=olt_info.get("c600", False),
+            olt_name=actual_olt_name,
         ) as handler:
-            return await handler.get_losi_client(actual_olt_name, interface)
+            los_list = await handler.get_losi_interface(interface)
+            if not los_list:
+                return []
+            interfaces = [item["interface"] for item in los_list]
+            customers = await fetch_losi_clients_from_db(interfaces, actual_olt_name)
+            if not customers:
+                return []
+
+            from services.biling_scaper import BillingScraper
+            from services.supabase_client import save_billing_data_sync
+
+            # Semaphore to throttle concurrent billing scrape sessions (max 3)
+            sem = asyncio.Semaphore(3)
+
+            def _scrape_coords(user_pppoe: str):
+                if not user_pppoe:
+                    return None
+                try:
+                    billing = BillingScraper()
+                    results = billing.search(user_pppoe)
+                    logging.info(f"[COORDS] Billing search for {user_pppoe}: {results}")
+                    if not results:
+                        return None
+                    customer_id = results[0].get("id")
+                    if not customer_id:
+                        return None
+                    customer = billing.get_customer_details(customer_id)
+                    if not customer:
+                        return None
+                    coord = customer.coordinate if hasattr(customer, "coordinate") else customer.get("coordinate")
+                    logging.info(f"[COORDS] Coord: {coord}")
+                    if coord:
+                        # Cache coordinates back to Supabase
+                        try:
+                            save_billing_data_sync({
+                                "user_pppoe": user_pppoe,
+                                "coordinates": coord,
+                            })
+                        except Exception:
+                            pass
+                    logging.info(f"[COORDS] Got coordinate for {user_pppoe}: {coord}")
+                    return coord
+                except Exception as e:
+                    logging.warning(f"[COORDS] Failed to scrape billing for {user_pppoe}: {e}")
+                return None
+
+            async def _scrape_with_sem(user_pppoe: str):
+                async with sem:
+                    return await asyncio.to_thread(_scrape_coords, user_pppoe)
+
+            # Scrape coordinates concurrently (max 3 at a time)
+            scrape_tasks = [
+                _scrape_with_sem(c.get("user_pppoe"))
+                for c in customers
+            ]
+            scraped_coords = await asyncio.gather(*scrape_tasks)
+            logging.info(f"[COORDS] Scraped coordinates: {scraped_coords}")
+
+            return [
+                {
+                    "nama": c.get("nama"),
+                    "user_pppoe": c.get("user_pppoe"),
+                    "interface": c.get("interface"),
+                    "coordinates": coord or c.get("coordinates"),
+                }
+                for c, coord in zip(customers, scraped_coords)
+            ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get LOS clients: {e}")
     

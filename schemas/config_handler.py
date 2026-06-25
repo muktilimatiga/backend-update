@@ -60,10 +60,6 @@ class ConfigurationBridgeRequest(BaseModel):
     vlan: str
 
 
-class CongigurationBridgeResponse(BaseModel):
-    olt_name: str
-    modem_options: str
-    package_options: str
 
 # --- SCHEMA BARU UNTUK ONU DETAIL ---
 
@@ -139,3 +135,24 @@ class ReconfigResponse(BaseModel):
     failed: int
     skipped: int
     results: List[ReconfigItemResult]
+
+
+# --- OCR VALIDATE SN SCHEMA ---
+
+class OcrResult(BaseModel):
+    """OCR extraction result from image."""
+    psn: Optional[str] = None
+    device_type: Optional[str] = None
+    confidence: float = 0
+    method: Optional[str] = None
+    ocr_fields: Dict[str, str] = {}
+    rotation_applied: int = 0
+    attempts: List[Dict[str, Any]] = []
+
+
+class OcrValidateResponse(BaseModel):
+    """Response for /ocr-validate-sn endpoint."""
+    ocr_result: OcrResult
+    matched_ont: Optional[UnconfiguredOnt] = None
+    all_onts: List[UnconfiguredOnt] = []
+    match_found: bool = False
