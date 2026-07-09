@@ -77,43 +77,86 @@ class BillingScraper:
 
     def _solve_captcha(self, captcha_url: str) -> Optional[str]:
         """
-        Download CAPTCHA image and solve it using direct OCR function import.
+        Download CAPTCHA image and solve it using PaddleOCR API.
 
         Args:
-            captcha_url: URL of the CAPTCHA image (e.g., 'captcha.php')
+            captcha_url: URL of the CAPTCHA image (e.g., 'c.php')
 
         Returns:
             Extracted CAPTCHA text, or None if failed
         """
         try:
-            print(f"[BillingScraper] 🔍 Starting CAPTCHA solve from: {captcha_url}")
+            print(f"[BillingScraper] Starting CAPTCHA solve from: {captcha_url}")
 
-            # Import OCR function directly (avoids HTTP call to same process)
-            from api.v1.endpoints.ocr import _process_image_ocr
+            from services.new_ocr import (
+                get_headers,
+                get_optional_payload,
+                submit_and_poll_ocr_job,
+            )
+            import requests as _requests
+            import json as _json
+            import re as _re
 
             # Step 1: Download CAPTCHA image using the same session (to maintain cookies)
-            print(f"[BillingScraper] 📥 Downloading CAPTCHA image...")
+            print(f"[BillingScraper] Downloading CAPTCHA image...")
             captcha_response = self.session.get(captcha_url, verify=False, timeout=10)
             captcha_response.raise_for_status()
             captcha_bytes = captcha_response.content
 
             print(
-                f"[BillingScraper] ✅ Downloaded {len(captcha_bytes)} bytes (Content-Type: {captcha_response.headers.get('Content-Type')})"
+                f"[BillingScraper] Downloaded {len(captcha_bytes)} bytes (Content-Type: {captcha_response.headers.get('Content-Type')})"
             )
 
-            # Save CAPTCHA image for debugging
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            debug_filename = f"captcha_debug_{timestamp}.png"
-            with open(debug_filename, "wb") as f:
-                f.write(captcha_bytes)
-            print(f"[BillingScraper] 💾 Saved CAPTCHA to: {debug_filename}")
+            # Step 2: Process image with PaddleOCR API
+            print(f"[BillingScraper] Processing image with PaddleOCR...")
+            headers = get_headers()
+            optional_payload = get_optional_payload()
 
-            # Step 2: Process image directly with OCR function
-            print(f"[BillingScraper] 🤖 Processing image with OCR...")
-            captcha_text = _process_image_ocr(captcha_bytes)
+            jsonl_url = submit_and_poll_ocr_job(
+                captcha_bytes, "captcha.png", headers, optional_payload
+            )
+            if jsonl_url is None:
+                print("[BillingScraper] PaddleOCR API job failed or timed out")
+                return None
+
+            # Download and parse JSONL result
+            jsonl_response = _requests.get(jsonl_url)
+            jsonl_response.raise_for_status()
+
+            lines = [
+                line for line in jsonl_response.text.strip().split("\n") if line.strip()
+            ]
+            if not lines:
+                print("[BillingScraper] Empty OCR response from PaddleOCR API")
+                return None
+
+            ocr_result_obj = _json.loads(lines[0])["result"]
+            layout_results = ocr_result_obj.get("layoutParsingResults", [])
+            if not layout_results:
+                print("[BillingScraper] No layout results from PaddleOCR")
+                return None
+
+            markdown_text = layout_results[0]["markdown"]["text"]
+
+            # Strip markdown formatting to get plain text
+            plain_lines = []
+            for line in markdown_text.splitlines():
+                line = _re.sub(r"^#+\s*", "", line)
+                line = _re.sub(r"(\*\*|__)(.*?)\1", r"\2", line)
+                line = _re.sub(r"(\*|_)(.*?)\1", r"\2", line)
+                line = _re.sub(r"`([^`]*)`", r"\1", line)
+                if _re.match(r"^\s*\|?[-:| ]+\|?\s*$", line):
+                    continue
+                line = _re.sub(r"^\s*\|", "", line)
+                line = _re.sub(r"\|\s*$", "", line)
+                stripped = line.strip()
+                if stripped:
+                    plain_lines.append(stripped)
+
+            captcha_text = "\n".join(plain_lines)
 
             print(
-                f"[BillingScraper] 📝 OCR raw output: '{captcha_text}' (length: {len(captcha_text) if captcha_text else 0})"
+                f"[BillingScraper] OCR raw output: '{captcha_text}' (length: {len(captcha_text) if captcha_text else 0})"
             )
 
             if captcha_text and captcha_text.strip():
@@ -124,23 +167,25 @@ class BillingScraper:
 
                 if math_answer is not None:
                     print(
-                        f"[BillingScraper] 🧮 Math expression detected: '{cleaned}' = {math_answer}"
+                        f"[BillingScraper] Math expression detected: '{cleaned}' = {math_answer}"
                     )
                     return str(math_answer)
                 else:
-                    print(f"[BillingScraper] ✅ CAPTCHA text (non-math): '{cleaned}'")
-                    return cleaned
+                    # Strip all spaces for non-math CAPTCHAs (e.g. "6 S9 M" -> "6S9M")
+                    no_spaces = cleaned.replace(" ", "")
+                    print(f"[BillingScraper] CAPTCHA text (non-math): '{no_spaces}'")
+                    return no_spaces
             else:
                 print(
-                    "[BillingScraper] ⚠️ OCR returned empty text - CAPTCHA not recognized"
+                    "[BillingScraper] OCR returned empty text - CAPTCHA not recognized"
                 )
                 return None
 
         except Exception as e:
             import traceback
 
-            print(f"[BillingScraper] ❌ CAPTCHA solving failed with error: {e}")
-            print(f"[BillingScraper] 📋 Traceback:\n{traceback.format_exc()}")
+            print(f"[BillingScraper] CAPTCHA solving failed with error: {e}")
+            print(f"[BillingScraper] Traceback:\n{traceback.format_exc()}")
             return None
 
     @staticmethod
@@ -199,7 +244,7 @@ class BillingScraper:
         from urllib.parse import urljoin
 
         # Construct CAPTCHA URL (assuming it's in the same directory as login page)
-        captcha_url = urljoin(self.login_url, "captcha.php")
+        captcha_url = urljoin(self.login_url, "c.php")
         print(f"[BillingScraper] 🔗 CAPTCHA URL: {captcha_url}")
 
         # Try login with CAPTCHA solving (with retries)
@@ -238,9 +283,10 @@ class BillingScraper:
                 print(f"  - Password: {'*' * len(settings.NMS_PASSWORD_BILING)}")
                 print(f"  - CAPTCHA: {captcha_text}")
 
-                # Submit login
+                # Submit login (form action is cl.php, not the root URL)
+                login_post_url = urljoin(self.login_url, "cl.php")
                 r = self.session.post(
-                    self.login_url, data=payload, verify=False, timeout=10
+                    login_post_url, data=payload, verify=False, timeout=10
                 )
 
                 print(
@@ -1015,22 +1061,73 @@ class NOCScrapper:
             return False
 
     def _solve_captcha(self, captcha_url: str) -> Optional[str]:
-        """Download and solve CAPTCHA using OCR."""
+        """Download and solve CAPTCHA using PaddleOCR API."""
         try:
-            from api.v1.endpoints.ocr import _process_image_ocr
+            from services.new_ocr import (
+                get_headers,
+                get_optional_payload,
+                submit_and_poll_ocr_job,
+            )
+            import requests as _requests
+            import json as _json
+            import re as _re
 
             captcha_response = self.session.get(captcha_url, verify=False, timeout=10)
             captcha_response.raise_for_status()
             captcha_bytes = captcha_response.content
 
-            captcha_text = _process_image_ocr(captcha_bytes)
+            headers = get_headers()
+            optional_payload = get_optional_payload()
+
+            jsonl_url = submit_and_poll_ocr_job(
+                captcha_bytes, "captcha.png", headers, optional_payload
+            )
+            if jsonl_url is None:
+                print("[NOC] PaddleOCR API job failed or timed out")
+                return None
+
+            jsonl_response = _requests.get(jsonl_url)
+            jsonl_response.raise_for_status()
+
+            lines = [
+                line for line in jsonl_response.text.strip().split("\n") if line.strip()
+            ]
+            if not lines:
+                print("[NOC] Empty OCR response from PaddleOCR")
+                return None
+
+            ocr_result_obj = _json.loads(lines[0])["result"]
+            layout_results = ocr_result_obj.get("layoutParsingResults", [])
+            if not layout_results:
+                print("[NOC] No layout results from PaddleOCR")
+                return None
+
+            markdown_text = layout_results[0]["markdown"]["text"]
+
+            # Strip markdown formatting
+            plain_lines = []
+            for line in markdown_text.splitlines():
+                line = _re.sub(r"^#+\s*", "", line)
+                line = _re.sub(r"(\*\*|__)(.*?)\1", r"\2", line)
+                line = _re.sub(r"(\*|_)(.*?)\1", r"\2", line)
+                line = _re.sub(r"`([^`]*)`", r"\1", line)
+                if _re.match(r"^\s*\|?[-:| ]+\|?\s*$", line):
+                    continue
+                line = _re.sub(r"^\s*\|", "", line)
+                line = _re.sub(r"\|\s*$", "", line)
+                stripped = line.strip()
+                if stripped:
+                    plain_lines.append(stripped)
+
+            captcha_text = "\n".join(plain_lines)
 
             if captcha_text and captcha_text.strip():
                 cleaned = captcha_text.strip()
                 math_answer = self._evaluate_math_captcha(cleaned)
                 if math_answer is not None:
                     return str(math_answer)
-                return cleaned
+                # Strip all spaces for non-math CAPTCHAs (e.g. "6 S9 M" -> "6S9M")
+                return cleaned.replace(" ", "")
             return None
         except Exception as e:
             print(f"[NOCScrapper] CAPTCHA solving failed: {e}")
@@ -1066,7 +1163,7 @@ class NOCScrapper:
 
         from urllib.parse import urljoin
 
-        captcha_url = urljoin(settings.LOGIN_URL_BILLING, "captcha.php")
+        captcha_url = urljoin(settings.LOGIN_URL_BILLING, "c.php")
         max_attempts = 3
 
         for attempt in range(max_attempts):
@@ -1085,7 +1182,7 @@ class NOCScrapper:
                     print("[NOC] WARNING: No CAPTCHA text, submitting without captcha")
 
                 r = self.session.post(
-                    settings.LOGIN_URL_BILLING,
+                    urljoin(settings.LOGIN_URL_BILLING, "cl.php"),
                     data=payload,
                     verify=False,
                     timeout=10,
