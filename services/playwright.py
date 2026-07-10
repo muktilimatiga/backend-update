@@ -10,7 +10,7 @@ import asyncio
 import time
 import requests
 from bs4 import BeautifulSoup
-from api.v1.endpoints.ocr import _process_image_ocr as ocr
+
 from schemas.customers_scrapper import (
     Customer,
     TicketItem,
@@ -151,6 +151,84 @@ class CustomerService:
             self.context.storage_state(path=str(self.session_file))
             logging.info(f"Session saved to {self.session_file}")
 
+    def _solve_captcha(self, captcha_url: str) -> Optional[str]:
+        """Download CAPTCHA image and solve using PaddleOCR API.
+
+        Uses Playwright's request context to fetch the image with browser cookies.
+        """
+        try:
+            from services.new_ocr import (
+                get_headers,
+                get_optional_payload,
+                submit_and_poll_ocr_job,
+            )
+            import json as _json
+            import re as _re
+
+            # Use Playwright's API request context (shares browser cookies)
+            api_response = self.context.request.get(captcha_url)
+            if not api_response.ok:
+                logging.error(f"Failed to fetch CAPTCHA: HTTP {api_response.status}")
+                return None
+            captcha_bytes = api_response.body()
+
+            # Process with PaddleOCR API
+            headers = get_headers()
+            optional_payload = get_optional_payload()
+            jsonl_url = submit_and_poll_ocr_job(
+                captcha_bytes, "captcha.png", headers, optional_payload
+            )
+            if jsonl_url is None:
+                logging.error("PaddleOCR API job failed or timed out")
+                return None
+
+            # Parse JSONL result
+            import requests as _requests
+            jsonl_response = _requests.get(jsonl_url)
+            jsonl_response.raise_for_status()
+            lines = [line for line in jsonl_response.text.strip().split("\n") if line.strip()]
+            if not lines:
+                logging.error("Empty OCR response from PaddleOCR API")
+                return None
+
+            ocr_result_obj = _json.loads(lines[0])["result"]
+            layout_results = ocr_result_obj.get("layoutParsingResults", [])
+            if not layout_results:
+                logging.error("No layout results from PaddleOCR")
+                return None
+
+            markdown_text = layout_results[0]["markdown"]["text"]
+
+            # Strip markdown formatting to plain text
+            plain_lines = []
+            for line in markdown_text.splitlines():
+                line = _re.sub(r"^#+\s*", "", line)
+                line = _re.sub(r"(\*\*|__)(.*?)\1", r"\2", line)
+                line = _re.sub(r"(\*|_)(.*?)\1", r"\2", line)
+                line = _re.sub(r"`([^`]*)`", r"\1", line)
+                if _re.match(r"^\s*\|?[-:| ]+\|?\s*$", line):
+                    continue
+                line = _re.sub(r"^\s*\|", "", line)
+                line = _re.sub(r"\|\s*$", "", line)
+                stripped = line.strip()
+                if stripped:
+                    plain_lines.append(stripped)
+
+            captcha_text = "\n".join(plain_lines)
+
+            if captcha_text and captcha_text.strip():
+                cleaned = captcha_text.strip()
+                math_answer = _evaluate_math_captcha(cleaned)
+                if math_answer is not None:
+                    logging.info(f"Math CAPTCHA: '{cleaned}' = {math_answer}")
+                    return str(math_answer)
+                return cleaned.replace(" ", "")
+            return None
+
+        except Exception as e:
+            logging.error(f"CAPTCHA solving failed: {e}")
+            return None
+
     def close(self, save: bool = True):
         """Close browser and cleanup."""
         if save and self.context:
@@ -200,43 +278,21 @@ class CustomerService:
         for attempt in range(max_attempts):
             logging.info(f"Login attempt {attempt + 1}/{max_attempts}")
 
-            # Check for CAPTCHA image
-            captcha_img = self.page.locator('img[src*="captcha.php"]').first
-            captcha_input = self.page.locator('input[name="captcha"]').first
+            # Solve CAPTCHA using PaddleOCR
+            from urllib.parse import urljoin
+            captcha_url = urljoin(self.page.url, "c.php")
+            captcha_text = self._solve_captcha(captcha_url)
 
-            captcha_text = None
-
-            if captcha_img.count() > 0 and captcha_img.is_visible():
-                logging.info("CAPTCHA detected, solving...")
-                try:
-                    # Take screenshot of the CAPTCHA element
-                    captcha_bytes = captcha_img.screenshot()
-
-                    # Solve using OCR
-                    ocr_text = ocr(captcha_bytes)
-                    logging.info(f"OCR Result: '{ocr_text}'")
-
-                    if ocr_text:
-                        # Check for math expression
-                        math_answer = _evaluate_math_captcha(ocr_text)
-
-                        if math_answer is not None:
-                            captcha_text = str(math_answer)
-                            logging.info(f"Math solution: {captcha_text}")
-                        else:
-                            captcha_text = ocr_text.strip()
-                            logging.info(f"CAPTCHA text: {captcha_text}")
-
-                        # Fill CAPTCHA field
-                        if captcha_input.count() > 0:
-                            captcha_input.fill(captcha_text)
-                except Exception as e:
-                    logging.error(f"Error solving CAPTCHA: {e}")
-
+            # Fill form fields
             self.page.get_by_placeholder("Username").fill(self.username)
-            logging.info("Username filled")
             self.page.get_by_placeholder("Password").fill(self.password)
-            logging.info("Password filled")
+
+            if captcha_text:
+                captcha_input = self.page.locator('input[name="captcha"]').first
+                if captcha_input.count() > 0:
+                    captcha_input.fill(captcha_text)
+                    logging.info(f"CAPTCHA filled: {captcha_text}")
+
             self.page.get_by_role("button", name="Sign In").click()
 
             try:
