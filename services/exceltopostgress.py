@@ -10,14 +10,16 @@ POSTGRES_URI = os.getenv("POSTGRES_URI", "dbname=data user=root password=Noclex1
 TABLE_NAME = os.getenv("POSTGRES_TABLE", "data_fiber")
 
 class ExcelHandler:
-    
+
     CANDIDATE_COLS = {
         "name": ["nama","name","customer","pelanggan"],
-        "pppoe": ["user pppoe","user_pppoe","pppoe","no internet","no. internet","internet","id internet"],
+        # Add "username pppoe" below:
+        "pppoe": ["username pppoe","user pppoe","user_pppoe","pppoe","no internet","no. internet","internet","id internet"],
         "address": ["alamat","address","addr"],
         "onu_port": ["port onu","onu port","port","port_onu"],
         "onu_sn": ["no. sn","sn","serial","no sn","onu sn","serial number","serial_number"],
-        "password": ["password","pppoe password","pw","pass"],
+        # Add "password pppoe" below:
+        "password": ["password pppoe","password","pppoe password","pw","pass"],
         "paket": ["paket", "Paket", "PAKET"],
     }
 
@@ -25,15 +27,18 @@ class ExcelHandler:
     def parse_sheet_name(name):
         n = (name or "").strip()
         if not n or n.upper().startswith("TOTAL") or n.upper() in {"FIBER","SUMMARY","SHEET1"}: return None, None
-        m = re.search(r"^(?P<olt>[A-Z]+)(?:\s+[A-Z0-9\s]+?)?(?:\s+PORT)?\s+(?P<port>[\d\.]+)\s*$", n, re.I)
+
+        # --- NEW REGEX ---
+        m = re.search(r"^(?P<olt>.*?)(?:\s+PORT)?\s+(?P<port>[\d\.]+)\s*$", n, re.I)
+
         return (m.group("olt").strip().upper(), m.group("port").strip()) if m else (n.upper(), None)
 
     @staticmethod
     def norm_cols(df): return df.rename(columns=lambda c: str(c).strip().lower() if c else "")
 
     @staticmethod
-    def pick(df, keys): 
-        for k in keys: 
+    def pick(df, keys):
+        for k in keys:
             if k in df.columns: return k
         return None
 
@@ -64,14 +69,14 @@ class ExcelHandler:
             print(f"  [SKIP] Sheet '{sheet}': Missing required columns. name={cols['name']}, pppoe={cols['pppoe']}, address={cols['address']}")
             return
 
-        def clean(v): 
+        def clean(v):
             s = str(v).strip()
             return s[:-2] if s.endswith(".0") else s
 
         for _, r in df.iterrows():
             pppoe = clean(r.get(cols["pppoe"], ""))
-            if not pppoe: continue 
-            
+            if not pppoe: continue
+
             # Simple parsing
             onu_port_val = (r.get(cols["onu_port"], "").strip() if cols["onu_port"] else None) or None
             final_olt = olt_port
@@ -99,10 +104,10 @@ class ExcelHandler:
     @classmethod
     def process_file(cls, file_obj):
         print("--- FINAL ATTEMPT: ROBUST UPLOAD ---")
-        
+
         conn = psycopg2.connect(POSTGRES_URI)
         cur = conn.cursor()
-        
+
         # 1. FIX LOCAL DB (Safe method)
         print("1. Fixing Local Database Rules...")
         try:
@@ -128,14 +133,20 @@ class ExcelHandler:
                 print(f"  Sheet '{sheet}': {len(docs)} rows")
             all_rows.extend(docs)
 
+        # --- YOU MUST ADD THESE 3 LINES TO FIX THE 21000 ERROR ---
+        # This automatically deletes any duplicate PPPoE accounts from the list
+        deduped_dict = {row["user_pppoe"]: row for row in all_rows}
+        all_rows = list(deduped_dict.values())
+        # ----------------------------------------------------------
+
         print(f"5. Uploading {len(all_rows)} rows...")
 
         # 5. INSERT (Local = Critical, Supabase = Try/Except)
-        
+
         def insert_local(batch):
             tuples = [(r["user_pppoe"], r["nama"], r["alamat"], r["olt_name"], r["olt_port"], r["onu_sn"], r["pppoe_password"], r["interface"], r["onu_id"], r["sheet"], r["paket"], r["updated_at"]) for r in batch]
             sql = f"""
-                INSERT INTO {TABLE_NAME} (user_pppoe, nama, alamat, olt_name, olt_port, onu_sn, pppoe_password, interface, onu_id, sheet, paket, updated_at) 
+                INSERT INTO {TABLE_NAME} (user_pppoe, nama, alamat, olt_name, olt_port, onu_sn, pppoe_password, interface, onu_id, sheet, paket, updated_at)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """
             execute_batch(cur, sql, tuples)
@@ -155,11 +166,11 @@ class ExcelHandler:
         batch_size = 500
         for i in range(0, len(all_rows), batch_size):
             batch = all_rows[i:i + batch_size]
-            
+
             insert_remote(batch) # Won't crash the script anymore
             insert_local(batch)  # Will definitely succeed
             conn.commit()
-            
+
             print(f"   Processed {min(i + batch_size, len(all_rows))} / {len(all_rows)}")
 
         conn.close()
