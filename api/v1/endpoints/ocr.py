@@ -501,3 +501,75 @@ async def validate_ocr_sn(file: UploadFile = File(...)):
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+@router.post("/ocr-paddle")
+async def ocr_paddle(file: UploadFile = File(...)):
+    """
+    Upload an image and extract text using the PaddleOCR API.
+
+    Submits the image to the PaddleOCR cloud API, polls until the job
+    is complete, and returns the raw OCR text extracted from the image.
+    """
+    if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Supported: JPEG, PNG, WebP",
+        )
+
+    try:
+        contents = await file.read()
+        filename = file.filename or "uploaded_image.jpg"
+
+        headers = get_headers()
+        optional_payload = get_optional_payload()
+
+        # Submit OCR job and poll for result URL
+        jsonl_url = submit_and_poll_ocr_job(contents, filename, headers, optional_payload)
+        if jsonl_url is None:
+            raise HTTPException(status_code=502, detail="OCR API job failed or timed out")
+
+        # Download and parse JSONL result
+        import requests as _requests
+        jsonl_response = _requests.get(jsonl_url)
+        jsonl_response.raise_for_status()
+
+        lines = [line for line in jsonl_response.text.strip().split("\n") if line.strip()]
+        if not lines:
+            raise HTTPException(status_code=502, detail="Empty OCR response from API")
+
+        ocr_result_obj = json.loads(lines[0])["result"]
+        layout_results = ocr_result_obj.get("layoutParsingResults", [])
+        if not layout_results:
+            raise HTTPException(status_code=502, detail="No layout results returned by OCR API")
+
+        markdown_text = layout_results[0]["markdown"]["text"]
+
+        # Strip markdown formatting — return plain text only
+        import re as _re
+        plain_lines = []
+        for line in markdown_text.splitlines():
+            # Remove heading markers (#, ##, etc.)
+            line = _re.sub(r"^#+\s*", "", line)
+            # Remove bold/italic markers (**, *, __, _)
+            line = _re.sub(r"(\*\*|__)(.*?)\1", r"\2", line)
+            line = _re.sub(r"(\*|_)(.*?)\1", r"\2", line)
+            # Remove inline code backticks
+            line = _re.sub(r"`([^`]*)`", r"\1", line)
+            # Remove markdown table separators
+            if _re.match(r"^\s*\|?[-:| ]+\|?\s*$", line):
+                continue
+            # Remove leading/trailing pipe chars from table rows
+            line = _re.sub(r"^\s*\|", "", line)
+            line = _re.sub(r"\|\s*$", "", line)
+            stripped = line.strip()
+            if stripped:
+                plain_lines.append(stripped)
+
+        plain_text = "\n".join(plain_lines)
+
+        return plain_text
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OCR paddle processing failed: {str(e)}")

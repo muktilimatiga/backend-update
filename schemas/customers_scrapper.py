@@ -115,5 +115,6 @@ class CutomerLosiResponse(BaseModel):
 
 class CustomerLosiCoordsResponse(CutomerLosiResponse):
     coordinates: Optional[str] = None
+    interface: Optional[str] = None
     
     

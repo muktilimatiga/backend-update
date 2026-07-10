@@ -1,5 +1,6 @@
 import logging
 import re
+import asyncio
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 
@@ -20,8 +21,11 @@ from schemas.customers_scrapper import (
     CustomerLosiCoordsResponse
 )
 from services.biling_scaper import BillingScraper, NOCScrapper
-from services.supabase_client import search_customers, save_billing_data_sync
+from services.supabase_client import search_customers, save_billing_data_sync, get_losi_client
 from services.playwright import CustomerService
+from services.connection_manager import olt_manager
+from services.telnet import TelnetClient
+from core import OLT_OPTIONS, OLT_ALIASES
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +91,7 @@ async def get_psb_data():
     ]
 
 
-@router.get("/customers-billing", response_model=List[Customer])
+@router.get("customers-billing", response_model=List[Customer])
 def get_customer_details_route(
     query: str = Query(..., min_length=1),
     billing_scraper: BillingScraper = Depends(get_billing),
@@ -290,7 +294,34 @@ async def get_customer_data_losi(
         ..., min_length=1, description="Interface Name"
     ),
 ):
-    pass
+    input_name = olt_name.upper()
+    actual_olt_name = OLT_ALIASES.get(input_name, input_name)
+    olt_info = OLT_OPTIONS.get(actual_olt_name)
+    if not olt_info:
+        raise HTTPException(status_code=404, detail=f"OLT '{olt_name}' not found")
+
+    try:
+        async with TelnetClient(
+            host=olt_info["ip"],
+            username=settings.OLT_USERNAME,
+            password=settings.OLT_PASSWORD,
+            is_c600=olt_info.get("c600", False),
+            olt_name=actual_olt_name,
+        ) as handler:
+            base_interface = interface.split(":")[0]
+            los_data = await handler.get_losi_interface(base_interface)
+            if not los_data:
+                return []
+            los_interfaces = [item["interface"] for item in los_data]
+            customers = await get_losi_client(los_interfaces, actual_olt_name)
+            return [
+                {"nama": c.get("nama"), "user_pppoe": c.get("user_pppoe")}
+                for c in customers
+            ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get LOS clients: {e}")
 
 @router.get("/customer-losi-coords", response_model=List[CustomerLosiCoordsResponse])
 async def get_customer_data_losi_coords(
@@ -301,6 +332,70 @@ async def get_customer_data_losi_coords(
         ..., min_length=1, description="Interface Name"
     ),
 ):
-    pass
+    input_name = olt_name.upper()
+    actual_olt_name = OLT_ALIASES.get(input_name, input_name)
+    olt_info = OLT_OPTIONS.get(actual_olt_name)
+    if not olt_info:
+        raise HTTPException(status_code=404, detail=f"OLT '{olt_name}' not found")
+
+    try:
+        async with TelnetClient(
+            host=olt_info["ip"],
+            username=settings.OLT_USERNAME,
+            password=settings.OLT_PASSWORD,
+            is_c600=olt_info.get("c600", False),
+            olt_name=actual_olt_name,
+        ) as handler:
+            base_interface = interface.split(":")[0]
+            los_data = await handler.get_losi_interface(base_interface)
+            if not los_data:
+                return []
+            los_interfaces = [item["interface"] for item in los_data]
+            customers = await get_losi_client(los_interfaces, actual_olt_name)
+
+            customers_needing_coords = [c for c in customers if not c.get("coordinates")]
+            coord_map = {}
+            if customers_needing_coords:
+                sem = asyncio.Semaphore(3)
+
+                noc = NOCScrapper()
+
+                def _scrape_coords(user_pppoe):
+                    if not user_pppoe:
+                        return None
+                    try:
+                        detail_links = noc._search_noc(user_pppoe)
+                        if not detail_links:
+                            return None
+                        data = noc._scrape_noc_detail(detail_links[0]["href"])
+                        coord = data.get("Maps") if data else None
+                        if coord:
+                            save_billing_data_sync({"user_pppoe": user_pppoe, "coordinates": coord})
+                        return coord
+                    except Exception as e:
+                        logger.warning(f"[COORDS] Scrape failed for {user_pppoe}: {e}")
+                        return None
+
+                async def _scrape_with_sem(user_pppoe):
+                    async with sem:
+                        return await asyncio.to_thread(_scrape_coords, user_pppoe)
+
+                tasks = [_scrape_with_sem(c.get("user_pppoe")) for c in customers_needing_coords]
+                coords = await asyncio.gather(*tasks)
+                coord_map = {c.get("user_pppoe"): coord for c, coord in zip(customers_needing_coords, coords)}
+
+            return [
+                {
+                    "nama": c.get("nama"),
+                    "user_pppoe": c.get("user_pppoe"),
+                    "coordinates": c.get("coordinates") or coord_map.get(c.get("user_pppoe")),
+                    "interface": c.get("interface"),
+                }
+                for c in customers
+            ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get LOS clients: {e}")
     
     

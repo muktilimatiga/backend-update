@@ -19,3 +19,4 @@ webdriver_manager==4.0.2
 openpyxl
 pandas
 python-multipart
+pytesseract

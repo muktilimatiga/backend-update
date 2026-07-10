@@ -196,7 +196,7 @@ async def get_losi_client(interfaces: list[str], olt_name: str) -> list[dict]:
         return supabase.table("data_fiber").select("*").eq("olt_name", olt_name).in_("interface", interfaces).execute()
 
     response = await asyncio.to_thread(_query)
-    return response.data
+    return response.data or []
 
 
 # --- LIBRENMS ---

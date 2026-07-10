@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+
+    # --- PaddleOCR Cloud API ---
+    PADDLE_OCR_API_TOKEN: str = ""
+    PADDLE_OCR_MODEL: str = "PaddleOCR-VL-1.6"
     
     # --- Development Mode ---
     DISABLE_AUTH: bool = False  # Set to True to disable JWT authentication for development
@@ -39,6 +43,11 @@ class Settings(BaseSettings):
     # SUPABASE
     SUPABASE_URL: str
     SUPABASE_KEY: str
+
+    #OCR
+    JOB_URL : str
+    TOKEN_API_OCR: str
+    MODEL : str
 
     # --- URLs ---
     LOGIN_URL_BILLING: str
