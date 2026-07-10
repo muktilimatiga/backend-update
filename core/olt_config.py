@@ -8,6 +8,8 @@ OLT_OPTIONS = {
     "CAMPUR BARU": {"ip": "192.168.12.9", "vlan": "911", "c600": True},
     "BLITAR": {"ip": "192.168.12.2", "vlan": "904", "c600": False},
     "GANDUSARI": {"ip": "192.168.12.3", "vlan": "906", "c600": False},
+    "BLITAR KOTA": {"ip": "192.168.26.2", "vlan": "950", "c600": False},
+    "BLITAR UTARA": {"ip": "10.254.1.2", "vlan": "951", "c600": True},
 }
 
 MODEM_OPTIONS = ["F609", "F670L", "C-DATA"]
@@ -35,7 +37,23 @@ OLT_ALIASES = {
     "KEDIRI": "KEDIRI",
     "BLITAR": "BLITAR",
     "GANDUSARI": "GANDUSARI",
+    "BLITAR KOTA": "BLITAR KOTA",
+    "BLITAR UTARA": "BLITAR UTARA",
 }
+
+
+def get_olt_credentials(olt_name: str, settings) -> tuple[str, str]:
+    """
+    Return (username, password) based on OLT name.
+    BLITAR KOTA and BLITAR UTARA have separate credentials,
+    all other OLTs use the default credentials.
+    """
+    name_upper = olt_name.upper()
+    if name_upper == "BLITAR KOTA":
+        return settings.OLT_KOTA_USERNAME, settings.OLT_KOTA_PASSWORD
+    elif name_upper == "BLITAR UTARA":
+        return settings.OLT_UTARA_USERNAME, settings.OLT_UTARA_PASSWORD
+    return settings.OLT_USERNAME, settings.OLT_PASSWORD
 
 
 def get_olt_info(olt_name: str) -> dict | None:

@@ -256,6 +256,7 @@ class TelnetClient:
                     parsed_data[key] = value
 
         final_result = {
+            "name": parsed_data.get("Name"),
             "type": parsed_data.get("Type"),
             "phase_state": parsed_data.get("Phase state"),
             "serial_number": parsed_data.get("Serial number"),
@@ -396,6 +397,20 @@ class TelnetClient:
             )
 
         return results
+
+    @staticmethod
+    def _parse_onu_running_config(raw_output: str) -> dict:
+        """
+        Parse 'show onu running config' output to extract PPPoE username/password.
+        Returns: {"pppoe_user": "...", "pppoe_password": "..."} or empty strings.
+        """
+        match = re.search(
+            r"wan-ip\s+\d+\s+mode\s+pppoe\s+username\s+(\S+)\s+password\s+(\S+)",
+            raw_output,
+        )
+        if match:
+            return {"pppoe_user": match.group(1), "pppoe_password": match.group(2)}
+        return {"pppoe_user": "", "pppoe_password": ""}
 
     # MAIN ONU COMMNAD
 
@@ -1269,3 +1284,242 @@ class TelnetClient:
         logging.info(f"Ditemukan {len(los_interfaces)} client LOS: {los_interfaces}")
         
         return los_interfaces
+
+    async def reconfig(self, interface, config_request):
+        """
+        Verify SN and name match, then reconfigure ONU using reconfig.yaml template.
+        Returns (logs, summary) like apply_configuration.
+        Includes old_pppoe_user/old_pppoe_password from the previous config.
+        """
+        from schemas.config_handler import ConfigurationRequest
+
+        logs = []
+        current_step = "Verifikasi SN dan Name"
+        old_credentials = {"pppoe_user": "", "pppoe_password": ""}
+
+        try:
+            # Step 0: Read current PPPoE credentials before reconfig
+            full_interface = self._format_onu_interface(interface)
+            current_step = "Baca running config lama"
+            logs.append(f"STEP > {current_step}...")
+            running_cmd = f"show onu running config {full_interface}"
+            running_output = await self._execute_command(running_cmd)
+            old_credentials = TelnetClient._parse_onu_running_config(running_output)
+            logs.append(f"INFO < Old PPPOE User: {old_credentials.get('pppoe_user', '-')}")
+            logs.append(f"INFO < Old PPPOE Password: {old_credentials.get('pppoe_password', '-')}")
+
+            # Step 1: Verify SN and name
+            current_step = "Verifikasi SN dan Name"
+            logs.append(f"STEP > {current_step}...")
+            cmd = f"show gpon onu detail-info {full_interface}"
+            output = await self._execute_command(cmd)
+
+            parsed = TelnetClient._parse_onu_detail_output(output)
+
+            olt_sn = (parsed.get("serial_number") or "").strip().upper()
+            olt_name = (parsed.get("name") or "").strip().upper()
+            expected_sn = config_request.sn.strip().upper()
+            expected_name = config_request.customer.name.strip().upper()
+
+            sn_match = olt_sn == expected_sn
+            name_match = olt_name == expected_name
+
+            logs.append(f"INFO < OLT SN: {olt_sn} | Expected: {expected_sn}")
+            logs.append(f"INFO < OLT Name: {olt_name} | Expected: {expected_name}")
+
+            if not sn_match or not name_match:
+                error_msg = []
+                if not sn_match:
+                    error_msg.append(f"SN tidak cocok (OLT: {olt_sn}, Expected: {expected_sn})")
+                if not name_match:
+                    error_msg.append(f"Name tidak cocok (OLT: {olt_name}, Expected: {expected_name})")
+
+                detail = "; ".join(error_msg)
+                logs.append(f"ERROR < {detail}")
+
+                error_report = "\n".join([
+                    "=========================================================",
+                    "              RECONFIG GAGAL                              ",
+                    "=========================================================",
+                    f"  Error Type         : Verifikasi Gagal",
+                    f"  Detail             : {detail}",
+                    f"  Serial Number      : {config_request.sn}",
+                    f"  Nama Pelanggan     : {config_request.customer.name}",
+                    f"  Old PPPOE User     : {old_credentials.get('pppoe_user', '-')}",
+                    f"  Old PPPOE Password : {old_credentials.get('pppoe_password', '-')}",
+                    "=========================================================",
+                ])
+
+                summary = {
+                    "status": "error",
+                    "message": f"Verifikasi gagal: {detail}",
+                    "serial_number": config_request.sn,
+                    "pppoe_user": config_request.customer.pppoe_user,
+                    "name": config_request.customer.name,
+                    "location": "-",
+                    "profile": "-",
+                    "report": error_report,
+                    "old_pppoe_user": old_credentials.get("pppoe_user", ""),
+                    "old_pppoe_password": old_credentials.get("pppoe_password", ""),
+                }
+                return logs, summary
+
+            logs.append("INFO < SN dan Name cocok. Melanjutkan reconfig...")
+
+            # Step 2: Parse interface to get slot, port, onu_id
+            current_step = "Parse interface"
+            logs.append(f"STEP > {current_step}...")
+            base_interface = self._parse_base_interface(interface)
+            onu_id = self._parse_onu_id(interface)
+
+            # Build OLT and ONU interface
+            olt_prefix = "gpon_olt-" if self.is_c600 else "gpon-olt_"
+            onu_prefix = "gpon_onu-" if self.is_c600 else "gpon-onu_"
+
+            # Parse slot and port from base_interface (e.g., "1/2/1" -> slot=2, port=1)
+            parts = base_interface.split("/")
+            if len(parts) >= 3:
+                pon_slot = parts[1]
+                pon_port = parts[2]
+            else:
+                raise ValueError(f"Invalid interface format: {interface}")
+
+            if self.is_c600:
+                interface_olt = f"{olt_prefix}1/{pon_port}/{pon_slot}"
+                interface_onu = f"{onu_prefix}1/{pon_port}/{pon_slot}:{onu_id}"
+            else:
+                interface_olt = f"{olt_prefix}1/{pon_slot}/{pon_port}"
+                interface_onu = f"{onu_prefix}1/{pon_slot}/{pon_port}:{onu_id}"
+
+            logs.append(f"INFO < OLT Interface: {interface_olt}")
+            logs.append(f"INFO < ONU Interface: {interface_onu}")
+            logs.append(f"INFO < ONU ID: {onu_id}")
+
+            # Step 3: Get VLAN from OLT config
+            current_step = "Get VLAN"
+            vlan = OLT_OPTIONS[self.olt_name]["vlan"]
+            logs.append(f"INFO < VLAN: {vlan}")
+
+            # Step 4: Render reconfig.yaml template
+            current_step = "Render template reconfig"
+            logs.append(f"STEP > {current_step}...")
+
+            context = {
+                "interface_olt": interface_olt,
+                "interface_onu": interface_onu,
+                "onu_id": onu_id,
+                "sn": config_request.sn,
+                "customer": config_request.customer,
+                "vlan": vlan,
+            }
+
+            def _render_and_parse_yaml():
+                if jinja_env is None:
+                    raise RuntimeError("Jinja2 environment not loaded. Cek folder templates.")
+                template = jinja_env.get_template("reconfig.yaml")
+                rendered = template.render(context)
+                return yaml.safe_load(rendered)
+
+            commands = await asyncio.to_thread(_render_and_parse_yaml)
+            # reconfig.yaml returns a dict with "commands" key
+            if isinstance(commands, dict):
+                commands = commands.get("commands", [])
+            logs.append(f"INFO < Template berhasil di-render. Total commands: {len(commands)}")
+
+            # Step 5: Execute commands
+            current_step = "Eksekusi perintah reconfig"
+            logs.append(f"STEP > {current_step}...")
+
+            for idx, cmd in enumerate(commands, 1):
+                logs.append(f"CMD > {cmd}")
+                logging.info(f"➡️ Executing: {cmd}")
+                output = await self._execute_command(cmd)
+                if output:
+                    logs.append(f"LOG < {output}")
+                    if "error" in output.lower() or "invalid" in output.lower() or "failed" in output.lower():
+                        raise RuntimeError(f"OLT mengembalikan error pada command: {cmd}\nOutput: {output}")
+                await asyncio.sleep(0.3)
+
+            # SUCCESS
+            logs.append("STEP > Reconfig selesai!")
+            report = "\n".join([
+                "=========================================================",
+                "              RECONFIG BERHASIL                           ",
+                "=========================================================",
+                f"  Serial Number      : {config_request.sn}",
+                f"  ID Pelanggan       : {config_request.customer.pppoe_user}",
+                f"  Nama Pelanggan     : {config_request.customer.name}",
+                f"  OLT dan ONU        : {interface_onu}",
+                f"  Old PPPOE User     : {old_credentials.get('pppoe_user', '-')}",
+                f"  Old PPPOE Password : {old_credentials.get('pppoe_password', '-')}",
+                "=========================================================",
+            ])
+
+            summary = {
+                "status": "success",
+                "message": "Reconfig berhasil",
+                "serial_number": config_request.sn,
+                "pppoe_user": config_request.customer.pppoe_user,
+                "name": config_request.customer.name,
+                "location": interface_onu,
+                "profile": "ALL",
+                "report": report,
+                "old_pppoe_user": old_credentials.get("pppoe_user", ""),
+                "old_pppoe_password": old_credentials.get("pppoe_password", ""),
+            }
+            return logs, summary
+
+        except (ConnectionError, asyncio.TimeoutError) as e:
+            error_report = "\n".join([
+                "=========================================================",
+                "              RECONFIG GAGAL                              ",
+                "=========================================================",
+                f"  Error Type         : Koneksi / Timeout",
+                f"  Step               : {current_step}",
+                f"  Detail             : {str(e)}",
+                f"  Old PPPOE User     : {old_credentials.get('pppoe_user', '-')}",
+                f"  Old PPPOE Password : {old_credentials.get('pppoe_password', '-')}",
+                "=========================================================",
+            ])
+            logs.append(f"ERROR < Connection/Timeout: {str(e)}")
+            summary = {
+                "status": "error",
+                "message": f"Gagal: Koneksi timeout - {str(e)}",
+                "serial_number": config_request.sn,
+                "pppoe_user": config_request.customer.pppoe_user,
+                "name": config_request.customer.name,
+                "location": "-",
+                "profile": "-",
+                "report": error_report,
+                "old_pppoe_user": old_credentials.get("pppoe_user", ""),
+                "old_pppoe_password": old_credentials.get("pppoe_password", ""),
+            }
+            return logs, summary
+
+        except Exception as e:
+            error_report = "\n".join([
+                "=========================================================",
+                "              RECONFIG GAGAL                              ",
+                "=========================================================",
+                f"  Error Type         : {type(e).__name__}",
+                f"  Step               : {current_step}",
+                f"  Detail             : {str(e)}",
+                f"  Old PPPOE User     : {old_credentials.get('pppoe_user', '-')}",
+                f"  Old PPPOE Password : {old_credentials.get('pppoe_password', '-')}",
+                "=========================================================",
+            ])
+            logs.append(f"ERROR < {type(e).__name__}: {str(e)}")
+            logging.error(f"Reconfig failed at step '{current_step}': {e}")
+            summary = {
+                "status": "error",
+                "message": f"Gagal pada step '{current_step}': {str(e)}",
+                "serial_number": config_request.sn,
+                "pppoe_user": config_request.customer.pppoe_user,
+                "name": config_request.customer.name,
+                "location": "-",
+                "profile": "-",
+                "report": error_report,
+                "old_pppoe_user": old_credentials.get("pppoe_user", ""),
+                "old_pppoe_password": old_credentials.get("pppoe_password", ""),
+            }
+            return logs, summary

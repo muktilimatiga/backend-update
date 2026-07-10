@@ -596,11 +596,12 @@ if __name__ == "__main__":
         # Note: You need to provide username/password
         # These are typically in settings, not in OLT_OPTIONS
         from core import settings
+        from core.olt_config import get_olt_credentials
         
         client = TelnetClient(
             host=olt_config["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=get_olt_credentials(olt_name, settings)[0],
+            password=get_olt_credentials(olt_name, settings)[1],
             is_c600=olt_config.get("c600", False),
             olt_name=olt_name
         )

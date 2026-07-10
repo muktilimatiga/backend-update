@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse
 import re
 
-from core import settings, get_olt_info, get_switch_connection
+from core import settings, get_olt_info, get_switch_connection, get_olt_credentials
 from services.connection_manager import olt_manager, switch_manager
 from services.switch_telnet import SwitchClient
 from schemas.bot_api import MonitoringRequest
@@ -51,10 +51,11 @@ async def cek_monitoring(olt_name: str, request: MonitoringRequest):
         raise HTTPException(status_code=404, detail="OLT not found")
 
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         result = await handler.get_olt_monitoring(request.interface)
@@ -68,10 +69,11 @@ async def redaman_monitoring(olt_name: str, request: MonitoringRequest):
     if not olt_info:
         raise HTTPException(status_code=404, detail="OLT not found")
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         result = await handler.get_rx_monitoring(request.interface)
@@ -85,10 +87,11 @@ async def cek_dying(olt_name: str):
     if not olt_info:
         raise HTTPException(status_code=404, detail="OLT not found")
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         result = await handler.get_olt_state()

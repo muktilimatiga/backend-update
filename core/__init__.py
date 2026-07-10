@@ -13,6 +13,7 @@ from core.olt_config import (
     OLT_ALIASES,
     COMMAND_TEMPLATES,
     get_olt_info,
+    get_olt_credentials,
 )
 
 # --- Switch Configuration ---
@@ -36,6 +37,7 @@ __all__ = [
     "OLT_ALIASES",
     "COMMAND_TEMPLATES",
     "get_olt_info",
+    "get_olt_credentials",
     
     # Switch
     "SWITCH_CONFIG",

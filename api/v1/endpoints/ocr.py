@@ -22,7 +22,7 @@ from services.new_ocr import (
     extract_ps_barcode_fallback,
     scan_barcodes,
 )
-from core import settings, OLT_OPTIONS, OLT_ALIASES
+from core import settings, OLT_OPTIONS, OLT_ALIASES, get_olt_credentials
 from services.connection_manager import olt_manager
 from schemas.config_handler import UnconfiguredOnt, OcrValidateResponse, OcrResult
 
@@ -340,11 +340,12 @@ async def _scan_all_onts() -> list:
 
     async def _scan_one(olt_name: str, olt_info: dict):
         try:
+            username, password = get_olt_credentials(olt_name, settings)
             handler = await asyncio.wait_for(
                 olt_manager.get_connection(
                     host=olt_info["ip"],
-                    username=settings.OLT_USERNAME,
-                    password=settings.OLT_PASSWORD,
+                    username=username,
+                    password=password,
                     is_c600=olt_info["c600"],
                     olt_name=olt_name,
                 ),

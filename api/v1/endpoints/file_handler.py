@@ -6,7 +6,7 @@ from pathlib import Path
 
 from services.exceltopostgress import ExcelHandler
 from core import settings
-from core.olt_config import OLT_OPTIONS, get_olt_info
+from core.olt_config import OLT_OPTIONS, get_olt_info, get_olt_credentials
 
 router = APIRouter()
 
@@ -64,10 +64,11 @@ async def generate_batch_config(
     
     try:
         # Connect to OLT
+        username, password = get_olt_credentials(olt_name.upper(), settings)
         client = TelnetClient(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info.get("c600", False),
             olt_name=olt_name.upper()
         )

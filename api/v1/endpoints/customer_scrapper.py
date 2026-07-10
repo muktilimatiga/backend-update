@@ -25,7 +25,7 @@ from services.supabase_client import search_customers, save_billing_data_sync, g
 from services.playwright import CustomerService
 from services.connection_manager import olt_manager
 from services.telnet import TelnetClient
-from core import OLT_OPTIONS, OLT_ALIASES
+from core import OLT_OPTIONS, OLT_ALIASES, get_olt_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -301,10 +301,11 @@ async def get_customer_data_losi(
         raise HTTPException(status_code=404, detail=f"OLT '{olt_name}' not found")
 
     try:
+        username, password = get_olt_credentials(actual_olt_name, settings)
         async with TelnetClient(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info.get("c600", False),
             olt_name=actual_olt_name,
         ) as handler:
@@ -339,10 +340,11 @@ async def get_customer_data_losi_coords(
         raise HTTPException(status_code=404, detail=f"OLT '{olt_name}' not found")
 
     try:
+        username, password = get_olt_credentials(actual_olt_name, settings)
         async with TelnetClient(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info.get("c600", False),
             olt_name=actual_olt_name,
         ) as handler:

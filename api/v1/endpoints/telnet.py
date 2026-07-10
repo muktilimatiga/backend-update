@@ -5,7 +5,7 @@ from typing import List
 import asyncio
 import logging
 
-from core import settings, OLT_OPTIONS, MODEM_OPTIONS, PACKAGE_OPTIONS, OLT_ALIASES
+from core import settings, OLT_OPTIONS, MODEM_OPTIONS, PACKAGE_OPTIONS, OLT_ALIASES, get_olt_credentials
 from schemas.config_handler import (
     UnconfiguredOnt,
     ConfigurationRequest,
@@ -59,13 +59,15 @@ async def detect_uncfg_onts(olt_name: str):
     max_retries = 2
     last_error = None
 
+    username, password = get_olt_credentials(actual_olt_name, settings)
+
     for attempt in range(max_retries):
         try:
             handler = await asyncio.wait_for(
                 olt_manager.get_connection(
                     host=olt_info["ip"],
-                    username=settings.OLT_USERNAME,
-                    password=settings.OLT_PASSWORD,
+                    username=username,
+                    password=password,
                     is_c600=olt_info["c600"],
                     olt_name=actual_olt_name,
                 ),
@@ -118,11 +120,12 @@ async def detect_all_onts():
 
     async def _scan_one(olt_name: str, olt_info: dict) -> List[UnconfiguredOnt]:
         try:
+            username, password = get_olt_credentials(olt_name, settings)
             handler = await asyncio.wait_for(
                 olt_manager.get_connection(
                     host=olt_info["ip"],
-                    username=settings.OLT_USERNAME,
-                    password=settings.OLT_PASSWORD,
+                    username=username,
+                    password=password,
                     is_c600=olt_info["c600"],
                     olt_name=olt_name,
                 ),
@@ -160,10 +163,11 @@ async def run_configuration(olt_name: str, request: ConfigurationRequest):
         )
 
     try:
+        username, password = get_olt_credentials(actual_olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"],
             olt_name=actual_olt_name,
         )
@@ -224,10 +228,11 @@ async def run_configuration_bridge(olt_name: str, request: ConfigurationBridgeRe
         )
 
     try:
+        username, password = get_olt_credentials(olt_name.upper(), settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"],
             olt_name=olt_name.upper(),
         )
@@ -290,10 +295,11 @@ async def run_batch_configuration(olt_name: str, batch: BatchConfigurationReques
 
     try:
         # 2. Open Telnet Connection ONCE
+        username, password = get_olt_credentials(olt_name.upper(), settings)
         async with TelnetClient(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"],
         ) as handler:
             # 3. Loop through the batch items using the SAME handler
@@ -393,10 +399,11 @@ async def run_reconfig_batch(olt_name: str, request: ReconfigRequest):
 
     try:
         # 1. Connect to OLT
+        username, password = get_olt_credentials(olt_name.upper(), settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"],
         )
 
@@ -533,10 +540,11 @@ async def get_losi_client(
         raise HTTPException(status_code=404, detail=f"OLT '{olt_name}' not found")
 
     try:
+        username, password = get_olt_credentials(actual_olt_name, settings)
         async with TelnetClient(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info.get("c600", False),
             olt_name=actual_olt_name,
         ) as handler:
@@ -569,10 +577,11 @@ async def get_losi_client_coords(
         raise HTTPException(status_code=404, detail=f"OLT '{olt_name}' not found")
 
     try:
+        username, password = get_olt_credentials(actual_olt_name, settings)
         async with TelnetClient(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info.get("c600", False),
             olt_name=actual_olt_name,
         ) as handler:

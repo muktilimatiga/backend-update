@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     # --- Credentials ---
     OLT_USERNAME: str
     OLT_PASSWORD: str
+    OLT_KOTA_USERNAME: str
+    OLT_KOTA_PASSWORD: str
+    OLT_UTARA_USERNAME: str
+    OLT_UTARA_PASSWORD: str
     NMS_USERNAME: str
     NMS_PASSWORD: str
     NMS_USERNAME_BILING: str

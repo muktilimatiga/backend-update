@@ -4,7 +4,7 @@ from fastapi.responses import PlainTextResponse
 import re
 import asyncio
 
-from core import settings, OLT_OPTIONS, get_olt_info
+from core import settings, OLT_OPTIONS, get_olt_info, get_olt_credentials
 from schemas.onu_handler import (
     OnuDetailRequest, OnuDetailResponse, OnuDbaResponse, LockEthRequest, LockEthResponse, EditCapacityRequest, EditCapacityResponse,
     CustomerLosiResponse, CustomerLosiCoordsResponse
@@ -38,10 +38,11 @@ async def cek_onu(olt_name: str, request: OnuDetailRequest):
         raise HTTPException(status_code=404, detail=f"OLT {request.olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
             
@@ -67,10 +68,11 @@ async def reboot_onu(olt_name: str, request: OnuDetailRequest):
             detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         data = await handler.send_reboot_command(request.interface)
@@ -93,10 +95,11 @@ async def no_onu(olt_name: str, request: OnuDetailRequest):
             detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         data = await handler.send_no_onu(request.interface)
@@ -120,10 +123,11 @@ async def cek_1_port(olt_name: str, request: OnuDetailRequest):
     # 2. Minta koneksi ke Manager (Bukan bikin baru)
     # Manager akan kasih koneksi lama kalau ada, atau bikin baru kalau belum ada
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -148,10 +152,11 @@ async def cek_1_port_rx(olt_name: str, request: OnuDetailRequest):
     # 2. Minta koneksi ke Manager (Bukan bikin baru)
     # Manager akan kasih koneksi lama kalau ada, atau bikin baru kalau belum ada
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -173,10 +178,11 @@ async def get_onu_ip(olt_name: str, request: OnuDetailRequest):
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -195,10 +201,11 @@ async def cek_eth(olt_name: str, request: OnuDetailRequest):
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -218,10 +225,11 @@ async def get_dba(olt_name: str, request: OnuDetailRequest):
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -240,10 +248,11 @@ async def get_eth(olt_name: str, request: OnuDetailRequest):
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -262,10 +271,11 @@ async def get_running_config(olt_name: str, request: OnuDetailRequest):
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -284,10 +294,11 @@ async def lock_eth(olt_name: str, request: LockEthRequest):
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -305,10 +316,11 @@ async def edit_capacity(olt_name: str, request: EditCapacityRequest):
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"]
         )
         
@@ -327,10 +339,11 @@ async def get_losi(olt_name: str, request: OnuDetailRequest):
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
     
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"],
             olt_name=olt_name
         )
@@ -360,10 +373,11 @@ async def get_customer_data_losi(
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
 
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"],
             olt_name=olt_name
         )
@@ -393,10 +407,11 @@ async def get_customer_data_losi_coords(
         raise HTTPException(status_code=404, detail=f"OLT {olt_name} tidak ditemukan!")
 
     try:
+        username, password = get_olt_credentials(olt_name, settings)
         handler = await olt_manager.get_connection(
             host=olt_info["ip"],
-            username=settings.OLT_USERNAME,
-            password=settings.OLT_PASSWORD,
+            username=username,
+            password=password,
             is_c600=olt_info["c600"],
             olt_name=olt_name
         )
