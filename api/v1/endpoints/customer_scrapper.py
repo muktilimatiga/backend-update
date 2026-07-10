@@ -91,7 +91,7 @@ async def get_psb_data():
     ]
 
 
-@router.get("customers-billing", response_model=List[Customer])
+@router.get("/customers-billing", response_model=List[Customer])
 def get_customer_details_route(
     query: str = Query(..., min_length=1),
     billing_scraper: BillingScraper = Depends(get_billing),
