@@ -781,7 +781,7 @@ def submit_and_poll_ocr_job(
         "optionalPayload": json.dumps(optional_payload)
     }
     files = {"file": (filename, image_bytes, "image/jpeg")}
-    job_response = requests.post(JOB_URL, headers=headers, data=data, files=files)
+    job_response = requests.post(JOB_URL, headers=headers, data=data, files=files, timeout=30)
 
     if job_response.status_code != 200:
         print(f"  Error: API returned status {job_response.status_code}")
@@ -791,8 +791,24 @@ def submit_and_poll_ocr_job(
     job_id = job_response.json()["data"]["jobId"]
     print(f"  OCR Job submitted: {job_id}")
 
+    MAX_POLL_RETRIES = 3
+    consecutive_errors = 0
+
     while True:
-        job_result_response = requests.get(f"{JOB_URL}/{job_id}", headers=headers)
+        try:
+            job_result_response = requests.get(
+                f"{JOB_URL}/{job_id}", headers=headers, timeout=30
+            )
+            consecutive_errors = 0
+        except requests.exceptions.RequestException as e:
+            consecutive_errors += 1
+            print(f"  Poll error ({consecutive_errors}/{MAX_POLL_RETRIES}): {e}")
+            if consecutive_errors >= MAX_POLL_RETRIES:
+                print(f"  Giving up after {MAX_POLL_RETRIES} consecutive poll errors")
+                return None
+            time.sleep(2)
+            continue
+
         if job_result_response.status_code != 200:
             print(f"  Error polling job status: {job_result_response.status_code}")
             return None

@@ -40,7 +40,9 @@ class ExcelHandler:
     @classmethod
     def docs_from_sheet(cls, xl, sheet):
         olt_name, olt_port = cls.parse_sheet_name(sheet)
-        if not olt_name: return
+        if not olt_name:
+            print(f"  [SKIP] Sheet '{sheet}': parse_sheet_name returned None")
+            return
         try:
             temp = xl.parse(sheet, header=None, dtype=str)
             idx = -1
@@ -48,13 +50,19 @@ class ExcelHandler:
                 s = ' '.join(str(x).lower() for x in row.dropna())
                 if "nama" in s and ("pppoe" in s or "alamat" in s):
                     idx = i; break
-            if idx == -1: return
+            if idx == -1:
+                print(f"  [SKIP] Sheet '{sheet}': No header row with 'nama'+'pppoe/alamat' in first 20 rows")
+                return
             df = xl.parse(sheet, header=idx, dtype=str).fillna("")
-        except: return
+        except Exception as e:
+            print(f"  [SKIP] Sheet '{sheet}': Parse error: {e}")
+            return
 
         df = cls.norm_cols(df)
         cols = {k: cls.pick(df, v) for k, v in cls.CANDIDATE_COLS.items()}
-        if not (cols["name"] and (cols["pppoe"] or cols["address"])): return
+        if not (cols["name"] and (cols["pppoe"] or cols["address"])):
+            print(f"  [SKIP] Sheet '{sheet}': Missing required columns. name={cols['name']}, pppoe={cols['pppoe']}, address={cols['address']}")
+            return
 
         def clean(v): 
             s = str(v).strip()
@@ -115,8 +123,10 @@ class ExcelHandler:
         xl = pd.ExcelFile(file_obj)
         all_rows = []
         for sheet in xl.sheet_names:
-            for doc in cls.docs_from_sheet(xl, sheet) or []:
-                all_rows.append(doc)
+            docs = list(cls.docs_from_sheet(xl, sheet) or [])
+            if docs:
+                print(f"  Sheet '{sheet}': {len(docs)} rows")
+            all_rows.extend(docs)
 
         print(f"5. Uploading {len(all_rows)} rows...")
 
