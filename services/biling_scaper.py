@@ -1,6 +1,7 @@
 import os
 import re
 import pickle
+import threading
 import time
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
@@ -48,20 +49,23 @@ class BillingScraper:
             }
         )
         self.reused_session = session is not None
+        self._cookie_lock = threading.Lock()
         if not self.reused_session:
             self.login_url = login_url or settings.LOGIN_URL_BILLING
             self._login()
 
     def _save_cookies(self):
-        with open(BILLING_COOKIE_FILE, "wb") as f:
-            pickle.dump(self.session.cookies, f)
+        with self._cookie_lock:
+            with open(BILLING_COOKIE_FILE, "wb") as f:
+                pickle.dump(self.session.cookies, f)
 
     def _load_cookies(self) -> bool:
-        if os.path.exists(BILLING_COOKIE_FILE):
-            with open(BILLING_COOKIE_FILE, "rb") as f:
-                self.session.cookies.update(pickle.load(f))
-            return True
-        return False
+        with self._cookie_lock:
+            if os.path.exists(BILLING_COOKIE_FILE):
+                with open(BILLING_COOKIE_FILE, "rb") as f:
+                    self.session.cookies.update(pickle.load(f))
+                return True
+            return False
 
     def _is_logged(self) -> bool:
         try:
@@ -248,7 +252,7 @@ class BillingScraper:
         print(f"[BillingScraper] 🔗 CAPTCHA URL: {captcha_url}")
 
         # Try login with CAPTCHA solving (with retries)
-        max_attempts = 3
+        max_attempts = 5
         last_error = None
 
         for attempt in range(max_attempts):
@@ -263,8 +267,8 @@ class BillingScraper:
                         f"[BillingScraper] ⚠️ CAPTCHA solve failed (attempt {attempt + 1}/{max_attempts})"
                     )
                     if attempt < max_attempts - 1:
-                        print(f"[BillingScraper] ⏳ Waiting 1 second before retry...")
-                        time.sleep(1)  # Brief pause before retry
+                        print(f"[BillingScraper] ⏳ Waiting 0.3 seconds before retry...")
+                        time.sleep(0.3)
                         continue
                     else:
                         raise ConnectionError(
@@ -301,8 +305,8 @@ class BillingScraper:
                         f"[BillingScraper] ❌ Login failed - error in URL: {r.url}"
                     )
                     if attempt < max_attempts - 1:
-                        print(f"[BillingScraper] ⏳ Waiting 1 second before retry...")
-                        time.sleep(1)
+                        print(f"[BillingScraper] ⏳ Waiting 0.3 seconds before retry...")
+                        time.sleep(0.3)
                         continue
                     else:
                         raise ConnectionError(
@@ -321,13 +325,29 @@ class BillingScraper:
                     f"[BillingScraper] ❌ Request error (attempt {attempt + 1}/{max_attempts}): {e}"
                 )
                 if attempt < max_attempts - 1:
-                    print(f"[BillingScraper] ⏳ Waiting 1 second before retry...")
-                    time.sleep(1)
+                    print(f"[BillingScraper] ⏳ Waiting 0.3 seconds before retry...")
+                    time.sleep(0.3)
                     continue
 
         # If we get here, all attempts failed
         print(f"[BillingScraper] 💀 All {max_attempts} login attempts failed")
         raise ConnectionError(f"Failed to connect to billing login page: {last_error}")
+
+    def _request_with_retry(self, method: str, url: str, **kwargs):
+        """Make a request with automatic re-login on session expiry."""
+        kwargs.setdefault("timeout", 15)
+        kwargs.setdefault("verify", False)
+        kwargs.setdefault("allow_redirects", True)
+
+        r = getattr(self.session, method)(url, **kwargs)
+
+        # Check if session expired (redirected to login page)
+        if "login" in r.url.lower() or r.status_code in (401, 403):
+            logger.warning("[BillingScraper] Session expired, re-logging in...")
+            self._login()
+            r = getattr(self.session, method)(url, **kwargs)
+
+        return r
 
     @staticmethod
     def _parse_month_year(
@@ -374,12 +394,10 @@ class BillingScraper:
     def search(self, search_value: str) -> List[Dict]:
         search_payload = {"type_cari": search_value, "cari_tagihan": ""}
         try:
-            res = self.session.post(
+            res = self._request_with_retry(
+                "post",
                 settings.BILLING_MODULE_BASE,
                 data=search_payload,
-                verify=False,
-                timeout=15,
-                allow_redirects=True,
             )
             res.raise_for_status()
         except requests.RequestException as e:
@@ -484,12 +502,10 @@ class BillingScraper:
         # Step 1: Search to get HTML with modals
         search_payload = {"type_cari": query, "cari_tagihan": ""}
         try:
-            res = self.session.post(
+            res = self._request_with_retry(
+                "post",
                 settings.BILLING_MODULE_BASE,
                 data=search_payload,
-                verify=False,
-                timeout=15,
-                allow_redirects=True,
             )
             res.raise_for_status()
         except requests.RequestException as e:
@@ -537,12 +553,10 @@ class BillingScraper:
 
         # Step 5: POST to create ticket
         try:
-            res = self.session.post(
+            res = self._request_with_retry(
+                "post",
                 settings.BILLING_MODULE_BASE,
                 data=payload,
-                verify=False,
-                timeout=15,
-                allow_redirects=True,
             )
             res.raise_for_status()
 
@@ -718,7 +732,7 @@ class BillingScraper:
     def get_invoice_data(self, url: str) -> dict:
         try:
             # Added shorter timeout for direct lookups
-            res = self.session.get(url, verify=False, timeout=10)
+            res = self._request_with_retry("get", url, timeout=10)
             res.raise_for_status()
         except requests.RequestException as e:
             # Return empty structure on failure so API doesn't crash
@@ -759,6 +773,8 @@ class BillingScraper:
                 mobile = "62" + mobile_raw[1:]
             else:
                 mobile = mobile_raw
+
+        coordinate = None
 
         # Extract coordinate from input name="coordinat" with value="lat,lng"
         coord_input = soup.find("input", {"name": "coordinat"})
@@ -890,7 +906,7 @@ class BillingScraper:
         url = detail_url or settings.DETAIL_URL_BILLING.format(id=customer_id)
 
         try:
-            res = self.session.get(url, verify=False, timeout=15)
+            res = self._request_with_retry("get", url)
             res.raise_for_status()
         except requests.RequestException as e:
             print(f"Failed to fetch customer details: {e}")
@@ -1034,19 +1050,22 @@ class NOCScrapper:
             {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         )
         self.reused_session = session is not None
+        self._cookie_lock = threading.Lock()
         if not self.reused_session:
             self._login()
 
     def _save_cookies(self):
-        with open("noc_session.pkl", "wb") as f:
-            pickle.dump(self.session.cookies, f)
+        with self._cookie_lock:
+            with open("noc_session.pkl", "wb") as f:
+                pickle.dump(self.session.cookies, f)
 
     def _load_cookies(self) -> bool:
-        if os.path.exists("noc_session.pkl"):
-            with open("noc_session.pkl", "rb") as f:
-                self.session.cookies.update(pickle.load(f))
-            return True
-        return False
+        with self._cookie_lock:
+            if os.path.exists("noc_session.pkl"):
+                with open("noc_session.pkl", "rb") as f:
+                    self.session.cookies.update(pickle.load(f))
+                return True
+            return False
 
     def _is_logged_in(self) -> bool:
         try:
@@ -1164,7 +1183,7 @@ class NOCScrapper:
         from urllib.parse import urljoin
 
         captcha_url = urljoin(settings.LOGIN_URL_BILLING, "c.php")
-        max_attempts = 3
+        max_attempts = 5
 
         for attempt in range(max_attempts):
             try:
@@ -1196,7 +1215,7 @@ class NOCScrapper:
                 if "login" in r.url.lower() or "pesan=" in r.url.lower():
                     print(f"[NOC] Still on login page after POST, retrying...")
                     if attempt < max_attempts - 1:
-                        time.sleep(1)
+                        time.sleep(0.3)
                         continue
                     else:
                         raise ConnectionError("NOC login failed after multiple attempts")
@@ -1207,21 +1226,35 @@ class NOCScrapper:
             except requests.RequestException as e:
                 print(f"[NOC] Request error: {e}")
                 if attempt < max_attempts - 1:
-                    time.sleep(1)
+                    time.sleep(0.3)
                     continue
 
         raise ConnectionError("NOC login failed after multiple attempts")
+
+    def _request_with_retry(self, method: str, url: str, **kwargs):
+        """Make a request with automatic re-login on session expiry."""
+        kwargs.setdefault("timeout", 15)
+        kwargs.setdefault("verify", False)
+        kwargs.setdefault("allow_redirects", True)
+
+        r = getattr(self.session, method)(url, **kwargs)
+
+        # Check if session expired (redirected to login page)
+        if "login" in r.url.lower() or r.status_code in (401, 403):
+            logger.warning("[NOCScrapper] Session expired, re-logging in...")
+            self._login()
+            r = getattr(self.session, method)(url, **kwargs)
+
+        return r
 
     def _search_noc(self, query: str) -> List[Dict]:
         """Search for customers via NOC search page. Returns list of detail links."""
         search_payload = {"type_cari": query, "cari_tagihan": ""}
         try:
-            res = self.session.post(
+            res = self._request_with_retry(
+                "post",
                 settings.SEARCH_NOC_URL,
                 data=search_payload,
-                verify=False,
-                timeout=15,
-                allow_redirects=True,
             )
             res.raise_for_status()
         except requests.RequestException as e:
@@ -1289,7 +1322,7 @@ class NOCScrapper:
     def _scrape_noc_detail(self, detail_url: str) -> dict:
         """Scrape customer data from a NOC detail page."""
         try:
-            res = self.session.get(detail_url, verify=False, timeout=15)
+            res = self._request_with_retry("get", detail_url)
             res.raise_for_status()
         except requests.RequestException as e:
             print(f"[NOCScrapper] Failed to fetch detail page: {e}")
@@ -1417,20 +1450,10 @@ class NOCScrapper:
 
     def _get_data_psb(self) -> List[Dict]:
         url_psb = settings.DATA_PSB_URL
-        res = None
-
-        for attempt in range(2):
-            try:
-                res = self.session.get(url_psb, verify=False, timeout=15)
-                res.raise_for_status()
-                break
-            except requests.RequestException as e:
-                if attempt == 0:
-                    self._login()
-                else:
-                    return []
-
-        if not res:
+        try:
+            res = self._request_with_retry("get", url_psb)
+            res.raise_for_status()
+        except requests.RequestException as e:
             return []
 
         soup = BeautifulSoup(res.text, "html.parser")
